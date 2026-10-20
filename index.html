@@ -1,265 +1,1018 @@
-<!doctype html>
-<html lang="ru">
+<!DOCTYPE html>
+<html lang="ru" class="dark">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#090d16">
-  <title>OSINT Analytics Lab — обращения</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root { color-scheme: dark; }
-    * { -webkit-tap-highlight-color: transparent; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(ellipse at 12% 0%, rgba(37, 99, 235, .16), transparent 36rem),
-        radial-gradient(ellipse at 100% 34%, rgba(16, 185, 129, .08), transparent 28rem),
-        #090d16;
-      color: #e5e7eb;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    .glass { background: rgba(20, 29, 45, .76); border: 1px solid rgba(148, 163, 184, .13); backdrop-filter: blur(18px); }
-    .panel { animation: appear .24s ease-out; }
-    @keyframes appear { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
-    .nav-item { color: #94a3b8; transition: color .18s, transform .18s; }
-    .nav-item.active { color: #60a5fa; }
-    .nav-item:active, .press:active { transform: scale(.97); }
-    .field { background: rgba(9, 13, 22, .72); border: 1px solid rgba(148, 163, 184, .19); }
-    .field:focus { border-color: #3b82f6; outline: 2px solid rgba(59, 130, 246, .16); }
-    .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Частное Детективное Агентство</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090D16',
+                        cardBg: '#131B2E',
+                        cardBorder: '#1E293B',
+                        accentBlue: '#3B82F6',
+                        accentCyan: '#06B6D4',
+                        accentGreen: '#10B981',
+                        accentAmber: '#F59E0B',
+                        accentRed: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar & Utility Styles */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090D16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 4px;
+        }
+        .glass-panel {
+            background: rgba(19, 27, 46, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glow-blue {
+            box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.4);
+        }
+        .glow-green {
+            box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.4);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Tap Highlight Removal for Mobile Devices */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        input, textarea, select {
+            user-select: text;
+        }
+        /* Smooth Fade Animation */
+        .fade-in {
+            animation: fadeIn 0.25s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
-<body class="min-h-screen">
-  <div class="mx-auto min-h-screen max-w-lg px-4 pb-28 pt-5">
-    <header class="mb-6">
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-300">
-            <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 19 6v5c0 4.5-2.9 8-7 10-4.1-2-7-5.5-7-10V6l7-3Z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/>
-            </svg>
-          </div>
-          <div>
-            <p class="text-[11px] font-bold tracking-[.17em] text-slate-100">OSINT ANALYTICS LAB</p>
-            <p class="mt-1 flex items-center gap-1.5 text-xs text-emerald-300">
-              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_9px_#10b981]"></span>
-              Приём обращений открыт
-            </p>
-          </div>
+<body class="bg-darkBg text-slate-200 font-sans antialiased min-h-screen flex flex-col justify-between pb-24 selection:bg-accentBlue selection:text-white">
+
+    <!-- ================= TOP HEADER ================= -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 py-3">
+        <div class="flex items-center justify-between max-w-lg mx-auto">
+            <div class="flex items-center space-x-3">
+                <div class="relative">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                        <i data-lucide="shield-search" class="w-5 h-5"></i>
+                    </div>
+                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-darkBg rounded-full animate-pulse"></span>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-1.5">
+                        <h1 class="text-sm font-bold tracking-wide text-white uppercase">VERITAS DETECTIVE</h1>
+                        <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono">PRIVATE</span>
+                    </div>
+                    <p class="text-xs text-slate-400 flex items-center space-x-1">
+                        <span>Детективное агентство</span>
+                        <span class="text-slate-600">•</span>
+                        <span class="text-emerald-400 font-medium">Приём заявок</span>
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="switchTab('my-requests')" class="relative p-2 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:bg-slate-700/50 transition">
+                <i data-lucide="folder-kanban" class="w-5 h-5 text-slate-300"></i>
+                <span id="header-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-accentBlue text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+            </button>
         </div>
-        <span class="rounded-full border border-blue-400/15 bg-blue-400/10 px-2.5 py-1 text-[10px] font-medium text-blue-200">PRIVATE INTAKE</span>
-      </div>
     </header>
 
-    <main>
-      <section id="screen-home" class="panel space-y-5">
-        <div>
-          <p class="text-sm text-slate-400">Здравствуйте, <span id="user-name" class="font-medium text-slate-200">друг</span></p>
-          <h1 class="mt-1 text-2xl font-semibold tracking-tight text-white">Разберёмся<br>в ситуации</h1>
-          <p class="mt-2 max-w-sm text-sm leading-6 text-slate-400">Помогаем структурировать материалы по мошенничеству и спорным транзакциям для дальнейшего законного обращения.</p>
-        </div>
+    <!-- ================= MAIN CONTAINER ================= -->
+    <main class="max-w-lg mx-auto w-full px-4 pt-4 flex-1">
 
-        <div class="glass rounded-3xl p-5">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-xs font-medium uppercase tracking-wider text-blue-300">Работаем с фактами</p>
-              <p class="mt-2 text-lg font-semibold text-white">От материалов — к плану действий</p>
+        <!-- ================= SCREEN 1: HOME DASHBOARD ================= -->
+        <section id="screen-home" class="space-y-5 fade-in">
+            <!-- User Welcome Banner -->
+            <div class="glass-card rounded-2xl p-4 border border-slate-800 relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl"></div>
+                <div class="flex items-start justify-between relative z-10">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700 mb-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span class="text-[11px] text-slate-300 font-medium">Конфиденциально & Анонимно</span>
+                        </div>
+                        <h2 class="text-lg font-bold text-white">Здравствуйте, <span id="tg-user-name" class="text-accentBlue">Заказчик</span></h2>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Частная детективная деятельность, поиск людей по минимальным данным и мирное досудебное урегулирование финансовых споров.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/80 text-center">
+                    <div>
+                        <div class="text-base font-extrabold text-white">100%</div>
+                        <div class="text-[10px] text-slate-400">Анонимность</div>
+                    </div>
+                    <div class="border-x border-slate-800/80">
+                        <div class="text-base font-extrabold text-emerald-400">Законно</div>
+                        <div class="text-[10px] text-slate-400">Без уголовки</div>
+                    </div>
+                    <div>
+                        <div class="text-base font-extrabold text-accentBlue">24-72 ч</div>
+                        <div class="text-[10px] text-slate-400">Средний срок</div>
+                    </div>
+                </div>
             </div>
-            <div class="rounded-2xl bg-blue-500/10 p-2.5 text-blue-300" aria-hidden="true">⌁</div>
-          </div>
-          <p class="mt-2 text-sm leading-6 text-slate-400">Проверка документов, хронологии и сведений о переводе. Не обещаем возврат денег и не устанавливаем личность частных лиц.</p>
-          <div class="mt-4 grid grid-cols-2 gap-3 border-t border-white/5 pt-4">
-            <div><p class="text-lg font-semibold text-white">По делу</p><p class="mt-0.5 text-xs text-slate-500">индивидуальный разбор</p></div>
-            <div><p class="text-lg font-semibold text-white">Конфиденциально</p><p class="mt-0.5 text-xs text-slate-500">бережно к данным</p></div>
-          </div>
-        </div>
 
-        <div>
-          <div class="mb-3 flex items-end justify-between">
-            <div><p class="text-xs font-medium uppercase tracking-[.16em] text-slate-500">Поддержка</p><h2 class="mt-1 text-lg font-semibold text-white">Популярные услуги</h2></div>
-            <button class="press text-xs font-medium text-blue-300" data-go="services">Все услуги →</button>
-          </div>
-          <div class="space-y-3">
-            <article class="glass rounded-2xl p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div><h3 class="font-semibold text-slate-100">Pre-Check материалов</h3><p class="mt-1 text-xs leading-5 text-slate-400">Разбор открытых условий сделки и признаков риска до перевода.</p></div>
-                <span class="shrink-0 rounded-lg bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-300">от $50</span>
-              </div>
-              <button class="press mt-3 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-blue-400/40" data-service="precheck">Заказать</button>
-            </article>
-            <article class="glass rounded-2xl p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div><h3 class="font-semibold text-slate-100">Разбор мошенничества</h3><p class="mt-1 text-xs leading-5 text-slate-400">Хронология, анализ предоставленных документов и следующих законных шагов.</p></div>
-                <span class="shrink-0 rounded-lg bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-300">от $150</span>
-              </div>
-              <button class="press mt-3 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-blue-400/40" data-service="fraud_report">Заказать</button>
-            </article>
-            <article class="glass rounded-2xl p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div><h3 class="font-semibold text-slate-100">Спорная транзакция</h3><p class="mt-1 text-xs leading-5 text-slate-400">Подготовка фактов и материалов для обращения в банк или компетентные органы.</p></div>
-                <span class="shrink-0 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-300">по запросу</span>
-              </div>
-              <button class="press mt-3 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-blue-400/40" data-service="transaction_dispute">Заказать</button>
-            </article>
-          </div>
-        </div>
-        <button data-go="form" class="press w-full rounded-2xl bg-blue-600 px-5 py-4 font-semibold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500">Подать обращение <span aria-hidden="true">→</span></button>
-        <p class="text-center text-[11px] leading-5 text-slate-500">Не используйте сервис для преследования, поиска личных данных или самовольного взыскания.</p>
-      </section>
+            <!-- Fast Call-to-Action Buttons -->
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="startOrderFlow('search')" class="glass-card p-3.5 rounded-xl border border-blue-500/20 hover:border-blue-500/50 transition text-left group relative overflow-hidden">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-accentBlue flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                        <i data-lucide="user-search" class="w-4 h-4"></i>
+                    </div>
+                    <div class="font-bold text-sm text-white">Найти человека</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">По фото, ФИО, номеру</div>
+                </button>
 
-      <section id="screen-services" class="panel hidden space-y-4">
-        <div><p class="text-xs font-medium uppercase tracking-[.16em] text-blue-300">Каталог</p><h1 class="mt-1 text-2xl font-semibold text-white">Услуги</h1><p class="mt-2 text-sm leading-6 text-slate-400">Работаем только с правомерно полученными материалами и открытой информацией.</p></div>
-        <article class="glass rounded-2xl p-5">
-          <div class="flex justify-between gap-3"><h2 class="font-semibold text-white">Pre-Check материалов</h2><span class="text-sm font-semibold text-blue-300">от $50</span></div>
-          <p class="mt-2 text-sm leading-6 text-slate-400">Проверка предоставленных условий, документов и публичных сведений, связанных с предполагаемой сделкой. Без идентификации частного лица и доступа к закрытым базам.</p>
-          <p class="mt-3 text-xs text-slate-500">Срок: обычно 1–2 рабочих дня</p>
-          <button class="press mt-4 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-200" data-service="precheck">Оставить обращение</button>
-        </article>
-        <article class="glass rounded-2xl p-5">
-          <div class="flex justify-between gap-3"><h2 class="font-semibold text-white">Разбор ситуации с мошенничеством</h2><span class="text-sm font-semibold text-blue-300">от $150</span></div>
-          <p class="mt-2 text-sm leading-6 text-slate-400">Структурирование хронологии, проверка согласованности предоставленных материалов и подготовка списка дальнейших законных действий.</p>
-          <p class="mt-3 text-xs text-slate-500">Срок: обычно 2–3 рабочих дня</p>
-          <button class="press mt-4 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-200" data-service="fraud_report">Оставить обращение</button>
-        </article>
-        <article class="glass rounded-2xl p-5">
-          <div class="flex justify-between gap-3"><h2 class="font-semibold text-white">Спор по транзакции</h2><span class="text-sm font-semibold text-emerald-300">по запросу</span></div>
-          <p class="mt-2 text-sm leading-6 text-slate-400">Помощь с изложением обстоятельств для банка, платёжного сервиса или правоохранительных органов. Решение о возврате принимает соответствующая организация.</p>
-          <p class="mt-3 text-xs text-slate-500">Срок и стоимость зависят от объёма материалов</p>
-          <button class="press mt-4 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-200" data-service="transaction_dispute">Оставить обращение</button>
-        </article>
-        <article class="glass rounded-2xl p-5">
-          <div class="flex justify-between gap-3"><h2 class="font-semibold text-white">Индивидуальная консультация</h2><span class="text-sm font-semibold text-emerald-300">по запросу</span></div>
-          <p class="mt-2 text-sm leading-6 text-slate-400">Первичная оценка задачи в рамках закона. Не оказываем услуги по слежке, доксингу, взлому, давлению или взысканию долга.</p>
-          <button class="press mt-4 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-200" data-service="custom">Оставить обращение</button>
-        </article>
-      </section>
+                <button onclick="startOrderFlow('return')" class="glass-card p-3.5 rounded-xl border border-emerald-500/20 hover:border-emerald-500/50 transition text-left group relative overflow-hidden">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                        <i data-lucide="hand-coins" class="w-4 h-4"></i>
+                    </div>
+                    <div class="font-bold text-sm text-white">Возврат средств</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">Досудебная медиация</div>
+                </button>
+            </div>
 
-      <section id="screen-form" class="panel hidden space-y-5">
-        <div><p class="text-xs font-medium uppercase tracking-[.16em] text-blue-300">Новый запрос</p><h1 class="mt-1 text-2xl font-semibold text-white">Расскажите о ситуации</h1><p class="mt-2 text-sm leading-6 text-slate-400">Не отправляйте пароли, данные чужих документов или информацию, добытую без разрешения.</p></div>
-        <form id="request-form" class="glass space-y-4 rounded-3xl p-5">
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-slate-200">Тема обращения</span>
-            <select id="service" class="field w-full rounded-xl px-3.5 py-3 text-sm text-slate-100">
-              <option value="precheck">Pre-Check материалов</option>
-              <option value="fraud_report">Разбор мошенничества</option>
-              <option value="transaction_dispute">Спорная транзакция</option>
-              <option value="custom">Индивидуальная консультация</option>
-            </select>
-          </label>
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-slate-200">Материалы по делу</span>
-            <textarea id="details" required maxlength="700" rows="3" class="field w-full resize-y rounded-xl px-3.5 py-3 text-sm leading-6 text-slate-100 placeholder:text-slate-600" placeholder="Например: дата, сумма и назначение перевода, номер обращения в банк, ссылка на публичную страницу/объявление. Не указывайте чужие личные идентификаторы."></textarea>
-            <span class="mt-1 block text-right text-[11px] text-slate-500">Без паролей и данных чужих документов</span>
-          </label>
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-slate-200">Что произошло?</span>
-            <textarea id="description" required maxlength="1800" rows="5" class="field w-full resize-y rounded-xl px-3.5 py-3 text-sm leading-6 text-slate-100 placeholder:text-slate-600" placeholder="Опишите факты и предпринятые вами действия. Не включайте угрозы, предположения о личности или запросы на преследование."></textarea>
-          </label>
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-slate-200">Сумма ущерба / чек <span class="font-normal text-slate-500">(необязательно)</span></span>
-            <input id="amount" type="text" maxlength="100" class="field w-full rounded-xl px-3.5 py-3 text-sm text-slate-100 placeholder:text-slate-600" placeholder="Например: 15 000 ₽">
-          </label>
-          <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/5 bg-slate-950/30 p-3.5">
-            <input id="disclaimer" type="checkbox" class="mt-0.5 h-4 w-4 accent-blue-500">
-            <span class="text-xs leading-5 text-slate-300">Подтверждаю, что обращение касается законного разбора моей ситуации, материалы получены правомерно и запрос не связан с преследованием, доксингом или незаконными действиями.</span>
-          </label>
-          <button id="submit-button" type="submit" disabled class="press w-full cursor-not-allowed rounded-xl bg-blue-600/40 px-4 py-3.5 font-semibold text-white/50 transition enabled:cursor-pointer enabled:bg-blue-600 enabled:text-white enabled:hover:bg-blue-500">Отправить обращение</button>
-          <p id="form-message" role="status" class="hidden text-center text-xs leading-5 text-amber-300"></p>
-        </form>
-      </section>
+            <!-- Featured Services Preview -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Основные направления</h3>
+                    <button onclick="switchTab('services')" class="text-xs text-accentBlue font-medium flex items-center">
+                        Все услуги <i data-lucide="chevron-right" class="w-3.5 h-3.5 ml-0.5"></i>
+                    </button>
+                </div>
 
-      <section id="screen-rules" class="panel hidden space-y-4">
-        <div><p class="text-xs font-medium uppercase tracking-[.16em] text-blue-300">Принципы работы</p><h1 class="mt-1 text-2xl font-semibold text-white">О нас и правила</h1></div>
-        <article class="glass rounded-2xl p-5">
-          <h2 class="font-semibold text-white">Конфиденциальность</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">Передавайте только сведения, необходимые для разбора вашего обращения. Доступ к деталям получают уполномоченные сотрудники. Не отправляйте пароли, банковские коды или лишние персональные данные.</p>
-        </article>
-        <article class="glass rounded-2xl p-5">
-          <h2 class="font-semibold text-white">Законные рамки</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">Мы не ищем адреса и личные данные частных лиц, не отслеживаем людей, не получаем доступ к закрытым аккаунтам и не оказываем услуги давления или взыскания. Материалы анализируются только в контексте обращения и правомерных дальнейших действий.</p>
-        </article>
-        <article class="glass rounded-2xl p-5">
-          <h2 class="font-semibold text-white">Отказ в обслуживании</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">В запросе на преследование, доксинг, взлом, угрозы, незаконный доступ или обход закона будет отказано. Не пересылайте материалы, полученные незаконным путём.</p>
-        </article>
-        <p class="px-1 text-xs leading-5 text-slate-500">Сервис не является юридической фирмой, банком или правоохранительным органом. Результат рассмотрения обращения не гарантирует возврат средств.</p>
-      </section>
+                <div class="space-y-2.5">
+                    <!-- Service 1 Preview -->
+                    <div onclick="openServiceModal('search')" class="glass-card p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition cursor-pointer flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-accentBlue flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="image" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-white">Поиск контактов и связи</h4>
+                                <p class="text-xs text-slate-400">Поиск потерянных друзей, родных по фото или ФИО</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
+                    </div>
+
+                    <!-- Service 2 Preview -->
+                    <div onclick="openServiceModal('mediation')" class="glass-card p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition cursor-pointer flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="scale" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-white">Переговоры с мошенниками</h4>
+                                <p class="text-xs text-slate-400">Возврат денег через родственников и беседы</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case Studies Teaser Banner -->
+            <div class="glass-card rounded-2xl p-4 border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent relative">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                            <i data-lucide="award" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-amber-300 uppercase tracking-wide">Реальные кейсы агентства</div>
+                            <div class="text-xs text-slate-300 font-medium">Как мы вернули 150 000 ₽ и нашли друга по фото</div>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('cases')" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 transition">
+                        Читать
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ethical Rules Banner -->
+            <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 space-y-1">
+                <div class="font-semibold text-slate-300 flex items-center">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-accentBlue mr-1.5"></i>
+                    Принцип законности и этики
+                </div>
+                <p class="leading-relaxed text-[11px]">
+                    Мы не занимаемся шантажом, угрозами или сталкерством. Все расследования и переговоры ведутся исключительно в рамках закона и правового поля.
+                </p>
+            </div>
+        </section>
+
+
+        <!-- ================= SCREEN 2: SERVICE CATALOG ================= -->
+        <section id="screen-services" class="space-y-4 hidden fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white">Каталог детективных услуг</h2>
+                    <p class="text-xs text-slate-400">Выберите подходящую категорию вашей задачи</p>
+                </div>
+                <span class="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded-md font-mono border border-slate-700">4 категории</span>
+            </div>
+
+            <div class="space-y-3">
+                <!-- Service 1 -->
+                <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-accentBlue flex items-center justify-center">
+                                <i data-lucide="user-check" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">Поиск людей и восстановление контактов</h3>
+                                <p class="text-xs text-slate-400">Поиск старых друзей, сослуживцев, родственников</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Установление местонахождения, актуальных телефонов, соцсетей и адресов. Поиск производится по имеющемуся фото, ФИО, номеру авто или старым телефонам.
+                    </p>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                        <div>
+                            <span class="text-slate-400">Срок:</span>
+                            <span class="font-semibold text-slate-200">24-48 часов</span>
+                        </div>
+                        <button onclick="openOrderModal('search_person')" class="bg-accentBlue hover:bg-blue-600 text-white font-medium px-3.5 py-1.5 rounded-lg transition">
+                            Заказать поиск
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Service 2 -->
+                <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                <i data-lucide="handshake" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">Досудебная медиация и возврат денег</h3>
+                                <p class="text-xs text-slate-400">Работа с мошенниками и должниками</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Установление личности мошенника, его фактического адреса и контактов его родителей/близких. Проведение деликатных дипломатических переговоров без угроз для мирного добровольного возврата средств.
+                    </p>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                        <div>
+                            <span class="text-slate-400">Оплата:</span>
+                            <span class="font-semibold text-emerald-400">% от суммы или фиксированная</span>
+                        </div>
+                        <button onclick="openOrderModal('mediation_return')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-3.5 py-1.5 rounded-lg transition">
+                            Подать заявку
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Service 3 -->
+                <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+                                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">Проверка перед сделкой (Pre-Check)</h3>
+                                <p class="text-xs text-slate-400">Аудит физлиц, продавцов и контрагентов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Проверка человека или продавца перед переводом крупной суммы за покупку авто, недвижимости или бизнес-услуги. Проверка на наличие долгов, фейковых аккаунтов и мошеннического прошлого.
+                    </p>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                        <div>
+                            <span class="text-slate-400">Срок:</span>
+                            <span class="font-semibold text-slate-200">От 12 часов</span>
+                        </div>
+                        <button onclick="openOrderModal('pre_check')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-1.5 rounded-lg border border-slate-700 transition">
+                            Заказать проверку
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Service 4 -->
+                <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-accentCyan flex items-center justify-center">
+                                <i data-lucide="search" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">Индивидуальное расследование</h3>
+                                <p class="text-xs text-slate-400">Нестандартные жизненные ситуации</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Если ваша проблема не подпадает под стандартные категории, мы разберем материалы индивидуально и предложим правовой и анонимный вариант решения.
+                    </p>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                        <div>
+                            <span class="text-slate-400">Формат:</span>
+                            <span class="font-semibold text-slate-200">Персональный разбор</span>
+                        </div>
+                        <button onclick="openOrderModal('custom_investigation')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-1.5 rounded-lg border border-slate-700 transition">
+                            Описать проблему
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SCREEN 3: MULTI-STEP ORDER FORM ================= -->
+        <section id="screen-order" class="space-y-4 hidden fade-in">
+            <!-- Form Header & Progress -->
+            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-white">Оформление заявки</h2>
+                        <p class="text-xs text-slate-400" id="step-indicator-text">Шаг 1 из 3: Выбор услуги</p>
+                    </div>
+                    <span id="step-badge" class="text-xs font-mono font-bold bg-blue-500/20 text-accentBlue px-2.5 py-1 rounded-lg border border-blue-500/30">
+                        1/3
+                    </span>
+                </div>
+
+                <!-- Progress Bar Track -->
+                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div id="step-progress-bar" class="bg-gradient-to-r from-accentBlue to-emerald-400 h-full w-1/3 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- Order Form Content -->
+            <form id="order-form" onsubmit="handleOrderSubmit(event)" class="glass-card rounded-2xl p-4 border border-slate-800 space-y-4">
+                
+                <!-- STEP 1: Select Category -->
+                <div id="form-step-1" class="space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Суть обращения / Категория</label>
+                    
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-blue-500/50 cursor-pointer transition">
+                            <input type="radio" name="service_type" value="search_person" checked onchange="updateFormFields()" class="w-4 h-4 text-accentBlue focus:ring-accentBlue bg-slate-800 border-slate-700">
+                            <div class="ml-3">
+                                <div class="text-sm font-semibold text-white">Поиск человека / друга по фото или данным</div>
+                                <div class="text-[11px] text-slate-400">Ищу друга, сослуживца или родственника</div>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center p-3 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/50 cursor-pointer transition">
+                            <input type="radio" name="service_type" value="mediation_return" onchange="updateFormFields()" class="w-4 h-4 text-emerald-400 focus:ring-emerald-400 bg-slate-800 border-slate-700">
+                            <div class="ml-3">
+                                <div class="text-sm font-semibold text-white">Возврат средств / Обман мошенниками</div>
+                                <div class="text-[11px] text-slate-400">Меня обманули на деньги, есть телефон/переписка</div>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center p-3 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-purple-500/50 cursor-pointer transition">
+                            <input type="radio" name="service_type" value="pre_check" onchange="updateFormFields()" class="w-4 h-4 text-purple-400 focus:ring-purple-400 bg-slate-800 border-slate-700">
+                            <div class="ml-3">
+                                <div class="text-sm font-semibold text-white">Проверка продавца / контрагента</div>
+                                <div class="text-[11px] text-slate-400">Хочу проверить человека перед отправкой денег</div>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center p-3 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-600 cursor-pointer transition">
+                            <input type="radio" name="service_type" value="custom_investigation" onchange="updateFormFields()" class="w-4 h-4 text-slate-400 focus:ring-slate-400 bg-slate-800 border-slate-700">
+                            <div class="ml-3">
+                                <div class="text-sm font-semibold text-white">Другая ситуация</div>
+                                <div class="text-[11px] text-slate-400">Индивидуальное детективное расследование</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <button type="button" onclick="nextStep(2)" class="w-full bg-accentBlue hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center space-x-2 mt-4">
+                        <span>Далее: Ввод имеющихся данных</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- STEP 2: Input Known Data -->
+                <div id="form-step-2" class="space-y-3 hidden">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Известная информация о цели</label>
+                        <span class="text-[10px] text-slate-500">Укажите всё, что есть</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">ФИО / Возраст / Город (если известно)</label>
+                        <input type="text" id="target_fio" placeholder="Например: Иванов Иван Сергеевич, ~28 лет" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-slate-300 mb-1">Номер телефона</label>
+                            <input type="text" id="target_phone" placeholder="+7 (999) 000-00-00" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-300 mb-1">Госномер авто / Иное</label>
+                            <input type="text" id="target_car" placeholder="А000АА777" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Ссылка на фото / Профиль в соцсетях</label>
+                        <input type="text" id="target_photo_link" placeholder="https://... или логин Telegram" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
+                    </div>
+
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex items-start space-x-2">
+                        <i data-lucide="info" class="w-4 h-4 text-accentBlue flex-shrink-0 mt-0.5"></i>
+                        <span>Если у вас есть фото файлом или скрины переписки, вы сможете отправить их напрямую мастеру после создания заявки.</span>
+                    </div>
+
+                    <div class="flex space-x-2 pt-2">
+                        <button type="button" onclick="nextStep(1)" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-3 rounded-xl transition">
+                            Назад
+                        </button>
+                        <button type="button" onclick="nextStep(3)" class="w-2/3 bg-accentBlue hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center space-x-2">
+                            <span>Далее: Описание ситуации</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Description & Submit -->
+                <div id="form-step-3" class="space-y-3 hidden">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Подробности ситуации и цель</label>
+
+                    <div id="amount-field-container">
+                        <label class="block text-xs text-slate-300 mb-1">Сумма ущерба / долга (если есть)</label>
+                        <div class="relative">
+                            <input type="number" id="target_amount" placeholder="150000" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-3.5 pr-8 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
+                            <span class="absolute right-3 top-2.5 text-slate-400 text-sm font-bold">₽</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Описание вашей ситуации *</label>
+                        <textarea id="target_description" rows="4" required placeholder="Опишите детально: что произошло, при каких обстоятельствах потеряли связь или перевели деньги, и какого результата ожидаете..." class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition resize-none"></textarea>
+                    </div>
+
+                    <!-- Mandatory Legal Disclaimer Box -->
+                    <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2">
+                        <label class="flex items-start space-x-2 cursor-pointer">
+                            <input type="checkbox" id="legal_agree" required class="mt-0.5 w-4 h-4 text-accentBlue focus:ring-accentBlue rounded bg-slate-800 border-slate-700">
+                            <span class="text-[11px] text-slate-300 leading-tight">
+                                Я подтверждаю, что поиск не связан с преследованием (сталкерством), личной местью или нелегальной деятельностью. Гарантирую достоверность информации.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="flex space-x-2 pt-2">
+                        <button type="button" onclick="nextStep(2)" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-3 rounded-xl transition">
+                            Назад
+                        </button>
+                        <button type="submit" id="submit-btn" class="w-2/3 bg-gradient-to-r from-accentBlue to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white font-extrabold py-3 rounded-xl transition shadow-lg shadow-blue-500/20 flex items-center justify-center space-x-2">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span>Отправить заявку</span>
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </section>
+
+
+        <!-- ================= SCREEN 4: CASE STUDIES ================= -->
+        <section id="screen-cases" class="space-y-4 hidden fade-in">
+            <div>
+                <h2 class="text-base font-bold text-white">Кейсы и практика расследований</h2>
+                <p class="text-xs text-slate-400">Реальные истории из практики нашего агентства</p>
+            </div>
+
+            <!-- Case 1: Finding Friend by Photo -->
+            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-accentBlue px-2.5 py-1 rounded-md border border-blue-500/20">Кейс #1 • Поиск человека</span>
+                    <span class="text-xs text-slate-500">Успешно</span>
+                </div>
+
+                <h3 class="font-bold text-white text-sm">Поиск друга детства по единственной фотографии</h3>
+
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-xs text-slate-300 space-y-2">
+                    <div>
+                        <span class="text-slate-500 font-medium">Задача заказчика:</span>
+                        <p class="mt-0.5">Обратился клиент, потерявший контакт с близким другом после его переезда в другой регион несколько лет назад. Из данных сохранилось лишь одно старое фото.</p>
+                    </div>
+                    <div class="pt-2 border-t border-slate-800">
+                        <span class="text-accentBlue font-medium">Что было сделано детективным агентством:</span>
+                        <ul class="list-disc list-inside mt-1 space-y-1 text-slate-400 text-[11px]">
+                            <li>Анализ цифровых биометрических следов снимка;</li>
+                            <li>Установление актуальной личности, ФИО и даты рождения;</li>
+                            <li>Определение текущего фактического адреса проживания и контактов;</li>
+                            <li>Предоставление верифицированных контактов заказчику.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-1">
+                    <span class="text-slate-400">Итог:</span>
+                    <span class="font-semibold text-emerald-400">Связь восстановлена за 24 часа</span>
+                </div>
+            </div>
+
+            <!-- Case 2: Fraudster & Parent Mediation -->
+            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-md border border-emerald-500/20">Кейс #2 • Досудебная медиация</span>
+                    <span class="text-xs text-slate-500">Возврат 150 000 ₽</span>
+                </div>
+
+                <h3 class="font-bold text-white text-sm">Возврат 150 000 рублей от мошенника без полиции</h3>
+
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-xs text-slate-300 space-y-2">
+                    <div>
+                        <span class="text-slate-500 font-medium">Задача заказчика:</span>
+                        <p class="mt-0.5">Клиента обманули при сделке в сети на 150 000 рублей. Мошенник заблокировал связь. Были известны только история переписки и номер телефона.</p>
+                    </div>
+                    <div class="pt-2 border-t border-slate-800">
+                        <span class="text-emerald-400 font-medium">Ход расследования и переговоров:</span>
+                        <ul class="list-disc list-inside mt-1 space-y-1 text-slate-400 text-[11px]">
+                            <li>Установлена личность мошенника и адрес его проживания;</li>
+                            <li>Найдены контакты родителей мошенника;</li>
+                            <li>Проведен разговор с родителями: объяснена ситуация, предложен конструктивный вариант разрешения без заявления в полицию и испорченной судимостью жизни их сына;</li>
+                            <li>Родители оценили понимание и добровольно вернули полные 150 000 рублей жертве.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-1">
+                    <span class="text-slate-400">Итог:</span>
+                    <span class="font-semibold text-emerald-400">Деньги возвращены в полном объеме</span>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SCREEN 5: GUARANTEES & POLICY ================= -->
+        <section id="screen-policy" class="space-y-4 hidden fade-in">
+            <div>
+                <h2 class="text-base font-bold text-white">Гарантии и Регламент</h2>
+                <p class="text-xs text-slate-400">Правила работы и этический кодекс детективного агентства</p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                <div class="flex items-center space-x-3 text-accentBlue">
+                    <i data-lucide="lock" class="w-5 h-5"></i>
+                    <h3 class="font-bold text-white text-sm">1. Полная Конфиденциальность</h3>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Все обращения, переданные материалы и результаты расследований строго защищены. Мы не передаем данные третьим лицам и гарантируем анонимность клиента.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+                <div class="flex items-center space-x-3 text-emerald-400">
+                    <i data-lucide="scale" class="w-5 h-5"></i>
+                    <h3 class="font-bold text-white text-sm">2. Работа строго в рамках Закона</h3>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Мы не осуществляем несанкционированный взлом систем, вымогательство или физическое воздействие. Наш инструмент — аналитика открытых источников данных (OSINT) и профессиональные переговоры.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3 border-l-4 border-l-accentRed">
+                <div class="flex items-center space-x-3 text-accentRed">
+                    <i data-lucide="user-x" class="w-5 h-5"></i>
+                    <h3 class="font-bold text-white text-sm">3. Запрет на сталкерство и слежку</h3>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Агентство оставляет за собой право отказать в выполнении заявки без объяснения причин, если возникнет подозрение, что заказ связан с преследованием бывших партнеров, ревностью или криминальным умыслом.
+                </p>
+            </div>
+        </section>
+
+
+        <!-- ================= SCREEN 6: MY REQUESTS TRACKER ================= -->
+        <section id="screen-my-requests" class="space-y-4 hidden fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white">Мои Заявки</h2>
+                    <p class="text-xs text-slate-400">Статус обработки ваших обращений</p>
+                </div>
+                <button onclick="refreshOrders()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Orders Container -->
+            <div id="orders-list-container" class="space-y-3">
+                <!-- Dynamic Content or Empty State -->
+                <div id="empty-orders-state" class="glass-card rounded-2xl p-8 text-center space-y-3">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center mx-auto">
+                        <i data-lucide="inbox" class="w-6 h-6"></i>
+                    </div>
+                    <div class="text-sm font-semibold text-white">У вас пока нет активных заявок</div>
+                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Выберите необходимую услугу и заполните вводные данные для начала работы.</p>
+                    <button onclick="switchTab('order')" class="bg-accentBlue text-white text-xs font-bold px-4 py-2 rounded-xl transition">
+                        Подать новую заявку
+                    </button>
+                </div>
+            </div>
+        </section>
+
     </main>
-  </div>
 
-  <nav class="safe-bottom fixed inset-x-0 bottom-0 z-10 border-t border-white/10 bg-[#090d16]/90 px-2 pt-2 backdrop-blur-xl" aria-label="Основная навигация">
-    <div class="mx-auto grid max-w-lg grid-cols-4">
-      <button class="nav-item active flex flex-col items-center gap-1 py-2 text-[10px]" data-nav="home"><span class="text-lg" aria-hidden="true">⌂</span>Главная</button>
-      <button class="nav-item flex flex-col items-center gap-1 py-2 text-[10px]" data-nav="services"><span class="text-lg" aria-hidden="true">⚒</span>Услуги</button>
-      <button class="nav-item flex flex-col items-center gap-1 py-2 text-[10px]" data-nav="form"><span class="text-lg" aria-hidden="true">▤</span>Обращение</button>
-      <button class="nav-item flex flex-col items-center gap-1 py-2 text-[10px]" data-nav="rules"><span class="text-lg" aria-hidden="true">ⓘ</span>Правила</button>
+    <!-- ================= BOTTOM NAVIGATION BAR ================= -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800/80 px-2 py-2">
+        <div class="max-w-lg mx-auto grid grid-cols-5 gap-1 text-center">
+            
+            <!-- Tab 1: Home -->
+            <button id="nav-home" onclick="switchTab('home')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-accentBlue">
+                <i data-lucide="home" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Главная</span>
+            </button>
+
+            <!-- Tab 2: Services -->
+            <button id="nav-services" onclick="switchTab('services')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-slate-400 hover:text-slate-200">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Услуги</span>
+            </button>
+
+            <!-- Tab 3: Order -->
+            <button id="nav-order" onclick="switchTab('order')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-slate-400 hover:text-slate-200">
+                <div class="relative">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i>
+                </div>
+                <span class="text-[10px] font-medium text-emerald-400">Заявка</span>
+            </button>
+
+            <!-- Tab 4: Cases -->
+            <button id="nav-cases" onclick="switchTab('cases')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-slate-400 hover:text-slate-200">
+                <i data-lucide="briefcase" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Кейсы</span>
+            </button>
+
+            <!-- Tab 5: Policy -->
+            <button id="nav-policy" onclick="switchTab('policy')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-slate-400 hover:text-slate-200">
+                <i data-lucide="shield" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Правила</span>
+            </button>
+
+        </div>
+    </nav>
+
+    <!-- ================= SERVICE DETAILS MODAL ================= -->
+    <div id="service-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 fade-in">
+        <div class="glass-card w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 border border-slate-700 space-y-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="modal-title" class="font-bold text-white text-base">Детали услуги</h3>
+                <button onclick="closeServiceModal()" class="p-1 rounded-lg text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="modal-content" class="text-xs text-slate-300 space-y-3">
+                <!-- Dynamic Content Inserted Here -->
+            </div>
+            <div class="pt-2">
+                <button id="modal-order-btn" onclick="" class="w-full bg-accentBlue text-white font-bold py-3 rounded-xl transition">
+                    Оформить заявку
+                </button>
+            </div>
+        </div>
     </div>
-  </nav>
 
-  <script>
-    (() => {
-      const tg = window.Telegram && window.Telegram.WebApp;
-      if (tg) {
-        tg.ready();
-        tg.expand();
-      }
 
-      const firstName = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
-        ? tg.initDataUnsafe.user.first_name
-        : "";
-      if (firstName) document.getElementById("user-name").textContent = firstName;
-
-      const screens = ["home", "services", "form", "rules"];
-      function showScreen(name) {
-        screens.forEach((screen) => {
-          document.getElementById(`screen-${screen}`).classList.toggle("hidden", screen !== name);
-        });
-        document.querySelectorAll("[data-nav]").forEach((button) => {
-          button.classList.toggle("active", button.dataset.nav === name);
-        });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      document.querySelectorAll("[data-nav], [data-go]").forEach((button) => {
-        button.addEventListener("click", () => showScreen(button.dataset.nav || button.dataset.go));
-      });
-      document.querySelectorAll("[data-service]").forEach((button) => {
-        button.addEventListener("click", () => {
-          document.getElementById("service").value = button.dataset.service;
-          showScreen("form");
-        });
-      });
-
-      const consent = document.getElementById("disclaimer");
-      const submit = document.getElementById("submit-button");
-      const formMessage = document.getElementById("form-message");
-      consent.addEventListener("change", () => {
-        submit.disabled = !consent.checked;
-      });
-
-      document.getElementById("request-form").addEventListener("submit", (event) => {
-        event.preventDefault();
-        if (!consent.checked || !event.currentTarget.reportValidity()) return;
-        if (!tg || typeof tg.sendData !== "function") {
-          formMessage.textContent = "Отправка доступна при открытии Mini App через Telegram-бота.";
-          formMessage.classList.remove("hidden");
-          return;
+    <!-- ================= JAVASCRIPT APP LOGIC ================= -->
+    <script>
+        // Telegram Web App Initialization
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            if (tg.initDataUnsafe?.user) {
+                const user = tg.initDataUnsafe.user;
+                document.getElementById('tg-user-name').innerText = user.first_name || user.username || 'Заказчик';
+            }
         }
-        const data = {
-          service: document.getElementById("service").value,
-          details: document.getElementById("details").value.trim(),
-          description: document.getElementById("description").value.trim(),
-          amount: document.getElementById("amount").value.trim(),
-          disclaimer: true
-        };
-        tg.sendData(JSON.stringify(data));
-        submit.disabled = true;
-        submit.textContent = "Отправлено";
-      });
-    })();
-  </script>
+
+        // Application State
+        let currentStep = 1;
+        let storedOrders = JSON.parse(localStorage.getItem('veritas_orders') || '[]');
+
+        // Initialize Icons & UI on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            updateOrdersBadge();
+            renderOrdersList();
+        });
+
+        // Tab Navigation Router
+        function switchTab(tabId) {
+            const screens = ['home', 'services', 'order', 'cases', 'policy', 'my-requests'];
+            
+            screens.forEach(s => {
+                const screenEl = document.getElementById(`screen-${s}`);
+                if (screenEl) screenEl.classList.add('hidden');
+            });
+
+            const targetScreen = document.getElementById(`screen-${tabId}`);
+            if (targetScreen) targetScreen.classList.remove('hidden');
+
+            // Update Nav Buttons Styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-accentBlue');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeNavBtn = document.getElementById(`nav-${tabId}`);
+            if (activeNavBtn) {
+                activeNavBtn.classList.remove('text-slate-400');
+                activeNavBtn.classList.add('text-accentBlue');
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Form Step Wizard Navigation
+        function nextStep(step) {
+            currentStep = step;
+            
+            // Hide all steps
+            document.getElementById('form-step-1').classList.add('hidden');
+            document.getElementById('form-step-2').classList.add('hidden');
+            document.getElementById('form-step-3').classList.add('hidden');
+
+            // Show active step
+            document.getElementById(`form-step-${step}`).classList.remove('hidden');
+
+            // Update Header & Progress Bar
+            const bar = document.getElementById('step-progress-bar');
+            const badge = document.getElementById('step-badge');
+            const text = document.getElementById('step-indicator-text');
+
+            if (step === 1) {
+                bar.style.width = '33%';
+                badge.innerText = '1/3';
+                text.innerText = 'Шаг 1 из 3: Выбор проблемы';
+            } else if (step === 2) {
+                bar.style.width = '66%';
+                badge.innerText = '2/3';
+                text.innerText = 'Шаг 2 из 3: Известные данные';
+            } else if (step === 3) {
+                bar.style.width = '100%';
+                badge.innerText = '3/3';
+                text.innerText = 'Шаг 3 из 3: Описание и отправка';
+            }
+        }
+
+        // Quick Launch Order Flow Trigger
+        function startOrderFlow(type) {
+            switchTab('order');
+            const radioMap = {
+                'search': 'search_person',
+                'return': 'mediation_return'
+            };
+            
+            const radioVal = radioMap[type] || 'search_person';
+            const radio = document.querySelector(`input[name="service_type"][value="${radioVal}"]`);
+            if (radio) {
+                radio.checked = true;
+                updateFormFields();
+            }
+            nextStep(1);
+        }
+
+        function openOrderModal(typeVal) {
+            switchTab('order');
+            const radio = document.querySelector(`input[name="service_type"][value="${typeVal}"]`);
+            if (radio) {
+                radio.checked = true;
+                updateFormFields();
+            }
+            nextStep(1);
+        }
+
+        // Conditional Field Formatting
+        function updateFormFields() {
+            const selectedType = document.querySelector('input[name="service_type"]:checked')?.value;
+            const amountContainer = document.getElementById('amount-field-container');
+            
+            if (selectedType === 'mediation_return') {
+                amountContainer.classList.remove('hidden');
+            } else {
+                amountContainer.classList.add('hidden');
+            }
+        }
+
+        // Handle Order Submission
+        function handleOrderSubmit(e) {
+            e.preventDefault();
+
+            const serviceType = document.querySelector('input[name="service_type"]:checked')?.value;
+            const fio = document.getElementById('target_fio').value.trim();
+            const phone = document.getElementById('target_phone').value.trim();
+            const car = document.getElementById('target_car').value.trim();
+            const photoLink = document.getElementById('target_photo_link').value.trim();
+            const amount = document.getElementById('target_amount').value.trim();
+            const description = document.getElementById('target_description').value.trim();
+
+            const serviceNames = {
+                'search_person': 'Поиск человека / контактов',
+                'mediation_return': 'Возврат средств / Переговоры',
+                'pre_check': 'Проверка перед сделкой',
+                'custom_investigation': 'Индивидуальное расследование'
+            };
+
+            const orderPayload = {
+                id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+                date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+                service_code: serviceType,
+                service_title: serviceNames[serviceType] || 'Заявка',
+                fio: fio || 'Не указано',
+                phone: phone || 'Не указано',
+                car: car || 'Не указано',
+                photoLink: photoLink || 'Не указано',
+                amount: amount ? `${amount} ₽` : 'Н/Д',
+                description: description,
+                status: 'Новая'
+            };
+
+            // Save locally
+            storedOrders.unshift(orderPayload);
+            localStorage.setItem('veritas_orders', JSON.stringify(storedOrders));
+
+            // Send Payload to Telegram WebApp Backend if available
+            if (tg && tg.sendData) {
+                try {
+                    tg.sendData(JSON.stringify(orderPayload));
+                } catch (err) {
+                    console.log('TG SendData simulated:', err);
+                }
+            }
+
+            // Reset Form & Update View
+            document.getElementById('order-form').reset();
+            nextStep(1);
+            updateOrdersBadge();
+            renderOrdersList();
+
+            // Switch to Tracker Screen
+            switchTab('my-requests');
+
+            // Show Confirmation
+            if (tg && tg.showAlert) {
+                tg.showAlert(`Ваша заявка #${orderPayload.id} принята в обработку! Аналитик свяжется с вами.`);
+            } else {
+                alert(`Ваша заявка #${orderPayload.id} отправлена! Мы свяжемся с вами в ближайшее время.`);
+            }
+        }
+
+        // Render Local Orders List
+        function renderOrdersList() {
+            const container = document.getElementById('orders-list-container');
+            const emptyState = document.getElementById('empty-orders-state');
+
+            if (storedOrders.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                container.innerHTML = '';
+                if (emptyState) container.appendChild(emptyState);
+                return;
+            }
+
+            container.innerHTML = '';
+
+            storedOrders.forEach(order => {
+                const card = document.createElement('div');
+                card.className = 'glass-card rounded-2xl p-4 border border-slate-800 space-y-2.5';
+
+                const statusBadges = {
+                    'Новая': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                    'В работе': 'bg-blue-500/10 text-accentBlue border-blue-500/20',
+                    'Завершено': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                };
+
+                const badgeClass = statusBadges[order.status] || 'bg-slate-800 text-slate-300';
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-mono font-bold text-white">${order.id}</span>
+                            <span class="text-[10px] text-slate-500">${order.date}</span>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${badgeClass}">
+                            ${order.status}
+                        </span>
+                    </div>
+
+                    <div class="text-xs">
+                        <div class="font-bold text-slate-200">${order.service_title}</div>
+                        <p class="text-slate-400 text-[11px] mt-1 line-clamp-2">${order.description}</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-2.5 rounded-xl text-[11px] space-y-1 font-mono text-slate-400">
+                        <div>Вводные: ${order.fio} | ${order.phone}</div>
+                        ${order.amount !== 'Н/Д' ? `<div class="text-emerald-400">Сумма ущерба: ${order.amount}</div>` : ''}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function updateOrdersBadge() {
+            const badge = document.getElementById('header-badge');
+            if (storedOrders.length > 0) {
+                badge.innerText = storedOrders.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function refreshOrders() {
+            storedOrders = JSON.parse(localStorage.getItem('veritas_orders') || '[]');
+            renderOrdersList();
+            updateOrdersBadge();
+        }
+
+        // Modal Helpers
+        function openServiceModal(type) {
+            const modal = document.getElementById('service-modal');
+            const title = document.getElementById('modal-title');
+            const content = document.getElementById('modal-content');
+            const btn = document.getElementById('modal-order-btn');
+
+            if (type === 'search') {
+                title.innerText = 'Поиск контактов и связей';
+                content.innerHTML = `
+                    <p>Мы осуществляем профессиональный поиск утраченных контактов по имеющимся данным:</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-400">
+                        <li>Поиск по старой или свежей фотографии;</li>
+                        <li>Поиск по ФИО, дате рождения или старым адресам;</li>
+                        <li>Поиск по госномеру автомобиля или номеру телефона.</li>
+                    </ul>
+                    <p class="text-emerald-400 font-semibold">Срок исполнения: от 24 до 48 часов.</p>
+                `;
+                btn.onclick = () => { closeServiceModal(); openOrderModal('search_person'); };
+            } else if (type === 'mediation') {
+                title.innerText = 'Досудебное урегулирование и возврат';
+                content.innerHTML = `
+                    <p>Деликатная дипломатическая работа в случаях интернет-обмана:</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-400">
+                        <li>Установление личности и фактического местонахождения обидчика;</li>
+                        <li>Поиск контактов родителей или близких родственников;</li>
+                        <li>Проведение мирных переговоров с разъяснением правовых последствий;</li>
+                        <li>Добровольный возврат средств без уголовного преследования.</li>
+                    </ul>
+                `;
+                btn.onclick = () => { closeServiceModal(); openOrderModal('mediation_return'); };
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeServiceModal() {
+            document.getElementById('service-modal').classList.add('hidden');
+        }
+    </script>
 </body>
 </html>
