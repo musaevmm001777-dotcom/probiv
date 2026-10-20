@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Поиск информации</title>
+  <!-- Подключаем SDK Telegram -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: var(--tg-theme-bg-color, #ffffff);
+      --text: var(--tg-theme-text-color, #000000);
+      --primary: var(--tg-theme-button-color, #2481cc);
+      --secondary: var(--tg-theme-secondary-bg-color, #f3f3f3);
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h1 { margin-bottom: 8px; }
+    p { color: #666; margin-bottom: 24px; }
+    label { display: block; margin-bottom: 6px; font-weight: 500; }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: var(--secondary);
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 16px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:active { opacity: 0.9; }
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      background: var(--secondary);
+      display: none;
+    }
+    .error { color: #d32f2f; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Поиск информации</h1>
+    <p>Введите данные для проверки контрагента или человека.</p>
+
+    <label for="query">Что ищем (ФИО, ИНН, название компании и т.п.)</label>
+    <input type="text" id="query" placeholder="Например: ООО Ромашка, ИНН 1234567890" />
+
+    <label for="type">Тип поиска</label>
+    <select id="type">
+      <option value="person">Человек (ФИО, телефон, соцсети)</option>
+      <option value="company">Контрагент (ИНН, ОГРН, долги, суды)</option>
+      <option value="address">Адрес/местоположение</option>
+    </select>
+
+    <button id="searchBtn">Начать поиск</button>
+
+    <div id="result" class="result">
+      <h3>Результат</h3>
+      <p id="resultText">Здесь появится результат после подключения ваших источников данных.</p>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand(); // Развернуть на весь экран
+
+    document.getElementById('searchBtn').addEventListener('click', async () => {
+      const query = document.getElementById('query').value.trim();
+      const type = document.getElementById('type').value;
+      const resultBox = document.getElementById('result');
+      const resultText = document.getElementById('resultText');
+
+      if (!query) {
+        resultText.textContent = 'Пожалуйста, введите запрос.';
+        resultBox.style.display = 'block';
+        return;
+      }
+
+      resultText.textContent = 'Выполняется поиск...';
+      resultBox.style.display = 'block';
+
+      // Здесь будет твой запрос к бэкенду/API
+      try {
+        // Пример заглушки:
+        await new Promise(r => setTimeout(r, 1500));
+        resultText.textContent = `Запрос: "${query}", тип: ${type}.\n\nДля реального поиска подключите легальные API (СПАРК, Контур.Фокус, открытые реестры и т.д.)`;
+      } catch (e) {
+        resultText.textContent = 'Произошла ошибка при поиске.';
+      }
+    });
+  </script>
+</body>
+</html>
