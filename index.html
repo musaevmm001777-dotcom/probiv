@@ -876,18 +876,22 @@
                 status: 'Новая'
             };
 
+            if (!tg || typeof tg.sendData !== 'function') {
+                alert('Заявку не отправили. Откройте приложение через кнопку бота «Открыть Агентство» и попробуйте снова.');
+                return;
+            }
+
+            try {
+                tg.sendData(JSON.stringify(orderPayload));
+            } catch (err) {
+                console.error('Не удалось отправить заявку боту:', err);
+                alert('Не удалось отправить заявку боту. Откройте приложение через кнопку бота и попробуйте снова.');
+                return;
+            }
+
             // Save locally
             storedOrders.unshift(orderPayload);
             localStorage.setItem('veritas_orders', JSON.stringify(storedOrders));
-
-            // Send Payload to Telegram WebApp Backend if available
-            if (tg && tg.sendData) {
-                try {
-                    tg.sendData(JSON.stringify(orderPayload));
-                } catch (err) {
-                    console.log('TG SendData simulated:', err);
-                }
-            }
 
             // Reset Form & Update View
             document.getElementById('order-form').reset();
@@ -897,13 +901,6 @@
 
             // Switch to Tracker Screen
             switchTab('my-requests');
-
-            // Show Confirmation
-            if (tg && tg.showAlert) {
-                tg.showAlert(`Ваша заявка #${orderPayload.id} принята в обработку! Аналитик свяжется с вами.`);
-            } else {
-                alert(`Ваша заявка #${orderPayload.id} отправлена! Мы свяжемся с вами в ближайшее время.`);
-            }
         }
 
         // Render Local Orders List
