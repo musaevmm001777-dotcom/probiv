@@ -1,115 +1,265 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Поиск информации</title>
-  <!-- Подключаем SDK Telegram -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090d16">
+  <title>OSINT Analytics Lab — обращения</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root {
-      --bg: var(--tg-theme-bg-color, #ffffff);
-      --text: var(--tg-theme-text-color, #000000);
-      --primary: var(--tg-theme-button-color, #2481cc);
-      --secondary: var(--tg-theme-secondary-bg-color, #f3f3f3);
-    }
+    :root { color-scheme: dark; }
+    * { -webkit-tap-highlight-color: transparent; }
     body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
-      padding: 16px;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 12% 0%, rgba(37, 99, 235, .16), transparent 36rem),
+        radial-gradient(ellipse at 100% 34%, rgba(16, 185, 129, .08), transparent 28rem),
+        #090d16;
+      color: #e5e7eb;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-    }
-    h1 { margin-bottom: 8px; }
-    p { color: #666; margin-bottom: 24px; }
-    label { display: block; margin-bottom: 6px; font-weight: 500; }
-    input, select, textarea {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background: var(--secondary);
-      box-sizing: border-box;
-      font-size: 14px;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 16px;
-      border: none;
-      border-radius: 8px;
-      background: var(--primary);
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    button:active { opacity: 0.9; }
-    .result {
-      margin-top: 20px;
-      padding: 16px;
-      border-radius: 8px;
-      background: var(--secondary);
-      display: none;
-    }
-    .error { color: #d32f2f; }
+    .glass { background: rgba(20, 29, 45, .76); border: 1px solid rgba(148, 163, 184, .13); backdrop-filter: blur(18px); }
+    .panel { animation: appear .24s ease-out; }
+    @keyframes appear { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    .nav-item { color: #94a3b8; transition: color .18s, transform .18s; }
+    .nav-item.active { color: #60a5fa; }
+    .nav-item:active, .press:active { transform: scale(.97); }
+    .field { background: rgba(9, 13, 22, .72); border: 1px solid rgba(148, 163, 184, .19); }
+    .field:focus { border-color: #3b82f6; outline: 2px solid rgba(59, 130, 246, .16); }
+    .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
   </style>
 </head>
-<body>
-  <div class="container">
-    <h1>Поиск информации</h1>
-    <p>Введите данные для проверки контрагента или человека.</p>
+<body class="min-h-screen">
+  <div class="mx-auto min-h-screen max-w-lg px-4 pb-28 pt-5">
+    <header class="mb-6">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-300">
+            <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 19 6v5c0 4.5-2.9 8-7 10-4.1-2-7-5.5-7-10V6l7-3Z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-[11px] font-bold tracking-[.17em] text-slate-100">OSINT ANALYTICS LAB</p>
+            <p class="mt-1 flex items-center gap-1.5 text-xs text-emerald-300">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_9px_#10b981]"></span>
+              Приём обращений открыт
+            </p>
+          </div>
+        </div>
+        <span class="rounded-full border border-blue-400/15 bg-blue-400/10 px-2.5 py-1 text-[10px] font-medium text-blue-200">PRIVATE INTAKE</span>
+      </div>
+    </header>
 
-    <label for="query">Что ищем (ФИО, ИНН, название компании и т.п.)</label>
-    <input type="text" id="query" placeholder="Например: ООО Ромашка, ИНН 1234567890" />
+    <main>
+      <section id="screen-home" class="panel space-y-5">
+        <div>
+          <p class="text-sm text-slate-400">Здравствуйте, <span id="user-name" class="font-medium text-slate-200">друг</span></p>
+          <h1 class="mt-1 text-2xl font-semibold tracking-tight text-white">Разберёмся<br>в ситуации</h1>
+          <p class="mt-2 max-w-sm text-sm leading-6 text-slate-400">Помогаем структурировать материалы по мошенничеству и спорным транзакциям для дальнейшего законного обращения.</p>
+        </div>
 
-    <label for="type">Тип поиска</label>
-    <select id="type">
-      <option value="person">Человек (ФИО, телефон, соцсети)</option>
-      <option value="company">Контрагент (ИНН, ОГРН, долги, суды)</option>
-      <option value="address">Адрес/местоположение</option>
-    </select>
+        <div class="glass rounded-3xl p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wider text-blue-300">Работаем с фактами</p>
+              <p class="mt-2 text-lg font-semibold text-white">От материалов — к плану действий</p>
+            </div>
+            <div class="rounded-2xl bg-blue-500/10 p-2.5 text-blue-300" aria-hidden="true">⌁</div>
+          </div>
+          <p class="mt-2 text-sm leading-6 text-slate-400">Проверка документов, хронологии и сведений о переводе. Не обещаем возврат денег и не устанавливаем личность частных лиц.</p>
+          <div class="mt-4 grid grid-cols-2 gap-3 border-t border-white/5 pt-4">
+            <div><p class="text-lg font-semibold text-white">По делу</p><p class="mt-0.5 text-xs text-slate-500">индивидуальный разбор</p></div>
+            <div><p class="text-lg font-semibold text-white">Конфиденциально</p><p class="mt-0.5 text-xs text-slate-500">бережно к данным</p></div>
+          </div>
+        </div>
 
-    <button id="searchBtn">Начать поиск</button>
+        <div>
+          <div class="mb-3 flex items-end justify-between">
+            <div><p class="text-xs font-medium uppercase tracking-[.16em] text-slate-500">Поддержка</p><h2 class="mt-1 text-lg font-semibold text-white">Популярные услуги</h2></div>
+            <button class="press text-xs font-medium text-blue-300" data-go="services">Все услуги →</button>
+          </div>
+          <div class="space-y-3">
+            <article class="glass rounded-2xl p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div><h3 class="font-semibold text-slate-100">Pre-Check материалов</h3><p class="mt-1 text-xs leading-5 text-slate-400">Разбор открытых условий сделки и признаков риска до перевода.</p></div>
+                <span class="shrink-0 rounded-lg bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-300">от $50</span>
+              </div>
+              <button class="press mt-3 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-blue-400/40" data-service="precheck">Заказать</button>
+            </article>
+            <article class="glass rounded-2xl p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div><h3 class="font-semibold text-slate-100">Разбор мошенничества</h3><p class="mt-1 text-xs leading-5 text-slate-400">Хронология, анализ предоставленных документов и следующих законных шагов.</p></div>
+                <span class="shrink-0 rounded-lg bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-300">от $150</span>
+              </div>
+              <button class="press mt-3 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-blue-400/40" data-service="fraud_report">Заказать</button>
+            </article>
+            <article class="glass rounded-2xl p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div><h3 class="font-semibold text-slate-100">Спорная транзакция</h3><p class="mt-1 text-xs leading-5 text-slate-400">Подготовка фактов и материалов для обращения в банк или компетентные органы.</p></div>
+                <span class="shrink-0 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-300">по запросу</span>
+              </div>
+              <button class="press mt-3 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-blue-400/40" data-service="transaction_dispute">Заказать</button>
+            </article>
+          </div>
+        </div>
+        <button data-go="form" class="press w-full rounded-2xl bg-blue-600 px-5 py-4 font-semibold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500">Подать обращение <span aria-hidden="true">→</span></button>
+        <p class="text-center text-[11px] leading-5 text-slate-500">Не используйте сервис для преследования, поиска личных данных или самовольного взыскания.</p>
+      </section>
 
-    <div id="result" class="result">
-      <h3>Результат</h3>
-      <p id="resultText">Здесь появится результат после подключения ваших источников данных.</p>
-    </div>
+      <section id="screen-services" class="panel hidden space-y-4">
+        <div><p class="text-xs font-medium uppercase tracking-[.16em] text-blue-300">Каталог</p><h1 class="mt-1 text-2xl font-semibold text-white">Услуги</h1><p class="mt-2 text-sm leading-6 text-slate-400">Работаем только с правомерно полученными материалами и открытой информацией.</p></div>
+        <article class="glass rounded-2xl p-5">
+          <div class="flex justify-between gap-3"><h2 class="font-semibold text-white">Pre-Check материалов</h2><span class="text-sm font-semibold text-blue-300">от $50</span></div>
+          <p class="mt-2 text-sm leading-6 text-slate-400">Проверка предоставленных условий, документов и публичных сведений, связанных с предполагаемой сделкой. Без идентификации частного лица и доступа к закрытым базам.</p>
+          <p class="mt-3 text-xs text-slate-500">Срок: обычно 1–2 рабочих дня</p>
+          <button class="press mt-4 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-200" data-service="precheck">Оставить обращение</button>
+        </article>
+        <article class="glass rounded-2xl p-5">
+          <div class="flex justify-between gap-3"><h2 class="font-semibold text-white">Разбор ситуации с мошенничеством</h2><span class="text-sm font-semibold text-blue-300">от $150</span></div>
+          <p class="mt-2 text-sm leading-6 text-slate-400">Структурирование хронологии, проверка согласованности предоставленных материалов и подготовка списка дальнейших законных действий.</p>
+          <p class="mt-3 text-xs text-slate-500">Срок: обычно 2–3 рабочих дня</p>
+          <button class="press mt-4 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-200" data-service="fraud_report">Оставить обращение</button>
+        </article>
+        <article class="glass rounded-2xl p-5">
+          <div class="flex justify-between gap-3"><h2 class="font-semibold text-white">Спор по транзакции</h2><span class="text-sm font-semibold text-emerald-300">по запросу</span></div>
+          <p class="mt-2 text-sm leading-6 text-slate-400">Помощь с изложением обстоятельств для банка, платёжного сервиса или правоохранительных органов. Решение о возврате принимает соответствующая организация.</p>
+          <p class="mt-3 text-xs text-slate-500">Срок и стоимость зависят от объёма материалов</p>
+          <button class="press mt-4 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-200" data-service="transaction_dispute">Оставить обращение</button>
+        </article>
+        <article class="glass rounded-2xl p-5">
+          <div class="flex justify-between gap-3"><h2 class="font-semibold text-white">Индивидуальная консультация</h2><span class="text-sm font-semibold text-emerald-300">по запросу</span></div>
+          <p class="mt-2 text-sm leading-6 text-slate-400">Первичная оценка задачи в рамках закона. Не оказываем услуги по слежке, доксингу, взлому, давлению или взысканию долга.</p>
+          <button class="press mt-4 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-200" data-service="custom">Оставить обращение</button>
+        </article>
+      </section>
+
+      <section id="screen-form" class="panel hidden space-y-5">
+        <div><p class="text-xs font-medium uppercase tracking-[.16em] text-blue-300">Новый запрос</p><h1 class="mt-1 text-2xl font-semibold text-white">Расскажите о ситуации</h1><p class="mt-2 text-sm leading-6 text-slate-400">Не отправляйте пароли, данные чужих документов или информацию, добытую без разрешения.</p></div>
+        <form id="request-form" class="glass space-y-4 rounded-3xl p-5">
+          <label class="block">
+            <span class="mb-2 block text-sm font-medium text-slate-200">Тема обращения</span>
+            <select id="service" class="field w-full rounded-xl px-3.5 py-3 text-sm text-slate-100">
+              <option value="precheck">Pre-Check материалов</option>
+              <option value="fraud_report">Разбор мошенничества</option>
+              <option value="transaction_dispute">Спорная транзакция</option>
+              <option value="custom">Индивидуальная консультация</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-medium text-slate-200">Материалы по делу</span>
+            <textarea id="details" required maxlength="700" rows="3" class="field w-full resize-y rounded-xl px-3.5 py-3 text-sm leading-6 text-slate-100 placeholder:text-slate-600" placeholder="Например: дата, сумма и назначение перевода, номер обращения в банк, ссылка на публичную страницу/объявление. Не указывайте чужие личные идентификаторы."></textarea>
+            <span class="mt-1 block text-right text-[11px] text-slate-500">Без паролей и данных чужих документов</span>
+          </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-medium text-slate-200">Что произошло?</span>
+            <textarea id="description" required maxlength="1800" rows="5" class="field w-full resize-y rounded-xl px-3.5 py-3 text-sm leading-6 text-slate-100 placeholder:text-slate-600" placeholder="Опишите факты и предпринятые вами действия. Не включайте угрозы, предположения о личности или запросы на преследование."></textarea>
+          </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-medium text-slate-200">Сумма ущерба / чек <span class="font-normal text-slate-500">(необязательно)</span></span>
+            <input id="amount" type="text" maxlength="100" class="field w-full rounded-xl px-3.5 py-3 text-sm text-slate-100 placeholder:text-slate-600" placeholder="Например: 15 000 ₽">
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/5 bg-slate-950/30 p-3.5">
+            <input id="disclaimer" type="checkbox" class="mt-0.5 h-4 w-4 accent-blue-500">
+            <span class="text-xs leading-5 text-slate-300">Подтверждаю, что обращение касается законного разбора моей ситуации, материалы получены правомерно и запрос не связан с преследованием, доксингом или незаконными действиями.</span>
+          </label>
+          <button id="submit-button" type="submit" disabled class="press w-full cursor-not-allowed rounded-xl bg-blue-600/40 px-4 py-3.5 font-semibold text-white/50 transition enabled:cursor-pointer enabled:bg-blue-600 enabled:text-white enabled:hover:bg-blue-500">Отправить обращение</button>
+          <p id="form-message" role="status" class="hidden text-center text-xs leading-5 text-amber-300"></p>
+        </form>
+      </section>
+
+      <section id="screen-rules" class="panel hidden space-y-4">
+        <div><p class="text-xs font-medium uppercase tracking-[.16em] text-blue-300">Принципы работы</p><h1 class="mt-1 text-2xl font-semibold text-white">О нас и правила</h1></div>
+        <article class="glass rounded-2xl p-5">
+          <h2 class="font-semibold text-white">Конфиденциальность</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">Передавайте только сведения, необходимые для разбора вашего обращения. Доступ к деталям получают уполномоченные сотрудники. Не отправляйте пароли, банковские коды или лишние персональные данные.</p>
+        </article>
+        <article class="glass rounded-2xl p-5">
+          <h2 class="font-semibold text-white">Законные рамки</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">Мы не ищем адреса и личные данные частных лиц, не отслеживаем людей, не получаем доступ к закрытым аккаунтам и не оказываем услуги давления или взыскания. Материалы анализируются только в контексте обращения и правомерных дальнейших действий.</p>
+        </article>
+        <article class="glass rounded-2xl p-5">
+          <h2 class="font-semibold text-white">Отказ в обслуживании</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">В запросе на преследование, доксинг, взлом, угрозы, незаконный доступ или обход закона будет отказано. Не пересылайте материалы, полученные незаконным путём.</p>
+        </article>
+        <p class="px-1 text-xs leading-5 text-slate-500">Сервис не является юридической фирмой, банком или правоохранительным органом. Результат рассмотрения обращения не гарантирует возврат средств.</p>
+      </section>
+    </main>
   </div>
 
+  <nav class="safe-bottom fixed inset-x-0 bottom-0 z-10 border-t border-white/10 bg-[#090d16]/90 px-2 pt-2 backdrop-blur-xl" aria-label="Основная навигация">
+    <div class="mx-auto grid max-w-lg grid-cols-4">
+      <button class="nav-item active flex flex-col items-center gap-1 py-2 text-[10px]" data-nav="home"><span class="text-lg" aria-hidden="true">⌂</span>Главная</button>
+      <button class="nav-item flex flex-col items-center gap-1 py-2 text-[10px]" data-nav="services"><span class="text-lg" aria-hidden="true">⚒</span>Услуги</button>
+      <button class="nav-item flex flex-col items-center gap-1 py-2 text-[10px]" data-nav="form"><span class="text-lg" aria-hidden="true">▤</span>Обращение</button>
+      <button class="nav-item flex flex-col items-center gap-1 py-2 text-[10px]" data-nav="rules"><span class="text-lg" aria-hidden="true">ⓘ</span>Правила</button>
+    </div>
+  </nav>
+
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand(); // Развернуть на весь экран
-
-    document.getElementById('searchBtn').addEventListener('click', async () => {
-      const query = document.getElementById('query').value.trim();
-      const type = document.getElementById('type').value;
-      const resultBox = document.getElementById('result');
-      const resultText = document.getElementById('resultText');
-
-      if (!query) {
-        resultText.textContent = 'Пожалуйста, введите запрос.';
-        resultBox.style.display = 'block';
-        return;
+    (() => {
+      const tg = window.Telegram && window.Telegram.WebApp;
+      if (tg) {
+        tg.ready();
+        tg.expand();
       }
 
-      resultText.textContent = 'Выполняется поиск...';
-      resultBox.style.display = 'block';
+      const firstName = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
+        ? tg.initDataUnsafe.user.first_name
+        : "";
+      if (firstName) document.getElementById("user-name").textContent = firstName;
 
-      // Здесь будет твой запрос к бэкенду/API
-      try {
-        // Пример заглушки:
-        await new Promise(r => setTimeout(r, 1500));
-        resultText.textContent = `Запрос: "${query}", тип: ${type}.\n\nДля реального поиска подключите легальные API (СПАРК, Контур.Фокус, открытые реестры и т.д.)`;
-      } catch (e) {
-        resultText.textContent = 'Произошла ошибка при поиске.';
+      const screens = ["home", "services", "form", "rules"];
+      function showScreen(name) {
+        screens.forEach((screen) => {
+          document.getElementById(`screen-${screen}`).classList.toggle("hidden", screen !== name);
+        });
+        document.querySelectorAll("[data-nav]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.nav === name);
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
-    });
+
+      document.querySelectorAll("[data-nav], [data-go]").forEach((button) => {
+        button.addEventListener("click", () => showScreen(button.dataset.nav || button.dataset.go));
+      });
+      document.querySelectorAll("[data-service]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.getElementById("service").value = button.dataset.service;
+          showScreen("form");
+        });
+      });
+
+      const consent = document.getElementById("disclaimer");
+      const submit = document.getElementById("submit-button");
+      const formMessage = document.getElementById("form-message");
+      consent.addEventListener("change", () => {
+        submit.disabled = !consent.checked;
+      });
+
+      document.getElementById("request-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!consent.checked || !event.currentTarget.reportValidity()) return;
+        if (!tg || typeof tg.sendData !== "function") {
+          formMessage.textContent = "Отправка доступна при открытии Mini App через Telegram-бота.";
+          formMessage.classList.remove("hidden");
+          return;
+        }
+        const data = {
+          service: document.getElementById("service").value,
+          details: document.getElementById("details").value.trim(),
+          description: document.getElementById("description").value.trim(),
+          amount: document.getElementById("amount").value.trim(),
+          disclaimer: true
+        };
+        tg.sendData(JSON.stringify(data));
+        submit.disabled = true;
+        submit.textContent = "Отправлено";
+      });
+    })();
   </script>
 </body>
 </html>
