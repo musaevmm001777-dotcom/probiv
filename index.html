@@ -505,7 +505,7 @@
                             <label for="client_telegram" class="block text-xs text-slate-300 mb-1">Ваш контактный Telegram</label>
                             <input type="text" id="client_telegram" autocomplete="username" placeholder="@username или ссылка t.me/..." class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
                         </div>
-                        <p class="text-[11px] text-slate-400">Укажите хотя бы один способ связи.</p>
+                        <p id="contact-validation-message" class="text-[11px] text-slate-400" aria-live="polite">Укажите хотя бы один способ связи.</p>
                     </div>
 
                     <!-- Mandatory Legal Disclaimer Box -->
@@ -755,6 +755,19 @@
             lucide.createIcons();
             updateOrdersBadge();
             renderOrdersList();
+
+            ['client_phone', 'client_telegram'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    const hasContact = document.getElementById('client_phone').value.trim()
+                        || document.getElementById('client_telegram').value.trim();
+                    if (hasContact) {
+                        const message = document.getElementById('contact-validation-message');
+                        message.innerText = 'Укажите хотя бы один способ связи.';
+                        message.classList.remove('text-red-400');
+                        message.classList.add('text-slate-400');
+                    }
+                });
+            });
         });
 
         // Tab Navigation Router
@@ -859,6 +872,22 @@
         function handleOrderSubmit(e) {
             e.preventDefault();
 
+            const clientPhone = document.getElementById('client_phone').value.trim();
+            const clientTelegram = document.getElementById('client_telegram').value.trim();
+            const contactValidationMessage = document.getElementById('contact-validation-message');
+
+            if (!clientPhone && !clientTelegram) {
+                contactValidationMessage.innerText = 'Укажите номер телефона или Telegram для связи.';
+                contactValidationMessage.classList.remove('text-slate-400');
+                contactValidationMessage.classList.add('text-red-400');
+                document.getElementById('client_phone').focus({ preventScroll: true });
+                return;
+            }
+
+            contactValidationMessage.innerText = 'Укажите хотя бы один способ связи.';
+            contactValidationMessage.classList.remove('text-red-400');
+            contactValidationMessage.classList.add('text-slate-400');
+
             const serviceType = document.querySelector('input[name="service_type"]:checked')?.value;
             const fio = document.getElementById('target_fio').value.trim();
             const phone = document.getElementById('target_phone').value.trim();
@@ -866,13 +895,6 @@
             const photoLink = document.getElementById('target_photo_link').value.trim();
             const amount = document.getElementById('target_amount').value.trim();
             const description = document.getElementById('target_description').value.trim();
-            const clientPhone = document.getElementById('client_phone').value.trim();
-            const clientTelegram = document.getElementById('client_telegram').value.trim();
-
-            if (!clientPhone && !clientTelegram) {
-                alert('Укажите контактный номер телефона или контактный Telegram.');
-                return;
-            }
 
             const serviceNames = {
                 'search_person': 'Поиск человека / контактов',
