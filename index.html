@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Частное Детективное Агентство</title>
+    <title>Mediator Detective — частное детективное агентство</title>
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Tailwind CSS CDN -->
@@ -100,7 +100,7 @@
                 </div>
                 <div>
                     <div class="flex items-center space-x-1.5">
-                        <h1 class="text-sm font-bold tracking-wide text-white uppercase">VERITAS DETECTIVE</h1>
+                        <h1 class="text-sm font-bold tracking-wide text-white uppercase">MEDIATOR DETECTIVE</h1>
                         <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono">PRIVATE</span>
                     </div>
                     <p class="text-xs text-slate-400 flex items-center space-x-1">
@@ -982,7 +982,7 @@
             };
 
             if (!tg || typeof tg.sendData !== 'function') {
-                alert('Заявку не отправили. Откройте приложение через кнопку бота «Открыть Агентство» и попробуйте снова.');
+                alert('Заявку не отправили. Откройте приложение через кнопку бота «Mediator Detective» и попробуйте снова.');
                 return;
             }
 
@@ -990,7 +990,7 @@
                 tg.sendData(JSON.stringify(orderPayload));
             } catch (err) {
                 console.error('Не удалось отправить заявку боту:', err);
-                alert('Не удалось отправить заявку боту. Откройте приложение через кнопку бота и попробуйте снова.');
+                alert('Не удалось отправить заявку боту. Откройте приложение через кнопку бота «Mediator Detective» и попробуйте снова.');
                 return;
             }
 
