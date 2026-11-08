@@ -1,1120 +1,786 @@
-<!DOCTYPE html>
-<html lang="ru" class="dark">
+<!doctype html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mediator Detective — частное детективное агентство</title>
-    <!-- Telegram Web App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#090D16',
-                        cardBg: '#131B2E',
-                        cardBorder: '#1E293B',
-                        accentBlue: '#3B82F6',
-                        accentCyan: '#06B6D4',
-                        accentGreen: '#10B981',
-                        accentAmber: '#F59E0B',
-                        accentRed: '#EF4444'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Custom Scrollbar & Utility Styles */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #090D16;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1E293B;
-            border-radius: 4px;
-        }
-        .glass-panel {
-            background: rgba(19, 27, 46, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .glass-card {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .glow-blue {
-            box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.4);
-        }
-        .glow-green {
-            box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.4);
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        /* Tap Highlight Removal for Mobile Devices */
-        * {
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
-        input, textarea, select {
-            user-select: text;
-        }
-        /* Smooth Fade Animation */
-        .fade-in {
-            animation: fadeIn 0.25s ease-in-out forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080b12">
+  <meta name="description" content="Маленькое пространство для связи на любом расстоянии.">
+  <title>distance — между нами</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://basemaps.cartocdn.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b12;
+      --surface: rgba(15, 19, 29, .86);
+      --surface-solid: #101520;
+      --line: rgba(255, 255, 255, .09);
+      --text: #f4f3f0;
+      --muted: #9da5b5;
+      --soft: #727b8d;
+      --accent: #c5a5ff;
+      --accent-2: #92d8ff;
+      --green: #a7e9c2;
+      --danger: #ff9aab;
+      --radius: 22px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { width: 100%; height: 100%; margin: 0; }
+
+    body {
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+
+    .app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(80, 84, 144, .17), transparent 42%),
+        var(--bg);
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse at 50% 48%, rgba(79, 82, 124, .22), transparent 56%),
+        #0a0e17;
+    }
+
+    #map::after {
+      position: absolute;
+      z-index: 400;
+      inset: 0;
+      content: "";
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(7, 9, 15, .55), transparent 27%, transparent 58%, rgba(7, 9, 15, .54));
+    }
+
+    .leaflet-container { background: #0a0e17; font: inherit; }
+    .leaflet-tile { filter: brightness(.73) saturate(.72) contrast(1.05); }
+    .leaflet-control-attribution {
+      margin: 0 12px 12px 0 !important;
+      padding: 3px 7px !important;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 8px;
+      background: rgba(8, 11, 18, .64) !important;
+      color: #9098a8 !important;
+      font-size: 9px !important;
+      backdrop-filter: blur(12px);
+    }
+    .leaflet-control-attribution a { color: #bac3d1 !important; }
+    .leaflet-control-zoom { display: none; }
+
+    .topbar {
+      position: absolute;
+      z-index: 500;
+      top: max(18px, env(safe-area-inset-top));
+      left: 50%;
+      display: flex;
+      width: min(1120px, calc(100% - 36px));
+      align-items: center;
+      justify-content: space-between;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .brand, .top-actions, .glass-card, .toast, .modal-card, .chat-panel {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .24);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+
+    .brand {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      gap: 11px;
+      padding: 7px 15px 7px 9px;
+      border-radius: 17px;
+      pointer-events: auto;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 31px;
+      height: 31px;
+      place-items: center;
+      border: 1px solid rgba(197, 165, 255, .3);
+      border-radius: 11px;
+      color: var(--accent);
+      background: linear-gradient(145deg, rgba(197, 165, 255, .2), rgba(146, 216, 255, .08));
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    .brand-name { font-size: 14px; font-weight: 650; letter-spacing: -.03em; }
+    .brand-caption { margin-top: 2px; color: var(--muted); font-size: 10px; }
+
+    .top-actions { display: flex; gap: 7px; padding: 5px; border-radius: 16px; pointer-events: auto; }
+
+    .icon-button, .button {
+      display: inline-flex;
+      min-height: 38px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
+    }
+
+    .icon-button {
+      width: 38px;
+      background: transparent;
+      color: #e5e6ed;
+      font-size: 17px;
+    }
+
+    .button { padding: 0 14px; font-size: 12px; font-weight: 620; }
+    .button:hover, .icon-button:hover { transform: translateY(-1px); }
+    .button:active, .icon-button:active { transform: scale(.97); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+
+    .button-primary {
+      border-color: rgba(197, 165, 255, .25);
+      background: linear-gradient(135deg, #c2a1ff, #a9b5ff);
+      color: #14111e;
+      box-shadow: 0 7px 24px rgba(164, 133, 255, .2);
+    }
+
+    .button-subtle {
+      border-color: var(--line);
+      background: rgba(255, 255, 255, .045);
+      color: var(--text);
+    }
+
+    .button-danger { border-color: rgba(255, 154, 171, .22); color: var(--danger); background: rgba(255, 154, 171, .07); }
+    .button:disabled { cursor: not-allowed; opacity: .48; transform: none; }
+
+    .map-label {
+      position: absolute;
+      z-index: 450;
+      top: 91px;
+      left: 50%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      transform: translateX(-50%);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 999px;
+      background: rgba(10, 13, 21, .56);
+      color: #c5c8d2;
+      font-size: 10px;
+      letter-spacing: .02em;
+      white-space: nowrap;
+      backdrop-filter: blur(15px);
+      pointer-events: none;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #e9c68a;
+      box-shadow: 0 0 11px rgba(233, 198, 138, .8);
+    }
+
+    .status-dot.is-live { background: var(--green); box-shadow: 0 0 11px rgba(167, 233, 194, .8); }
+
+    .bottom-area {
+      position: absolute;
+      z-index: 500;
+      right: 0;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      left: 0;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+      pointer-events: none;
+    }
+
+    .bottom-content {
+      display: grid;
+      width: min(970px, 100%);
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 12px;
+    }
+
+    .glass-card {
+      border-radius: var(--radius);
+      pointer-events: auto;
+    }
+
+    .connection-card { padding: 17px 19px 16px; }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .demo-badge {
+      padding: 4px 7px;
+      border: 1px solid rgba(197, 165, 255, .18);
+      border-radius: 7px;
+      background: rgba(197, 165, 255, .09);
+      color: #d3baff;
+      font-size: 9px;
+      letter-spacing: .05em;
+    }
+
+    .connection-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 13px;
+    }
+
+    .people { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+    .avatar {
+      display: grid;
+      width: 41px;
+      height: 41px;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 15px;
+      background: linear-gradient(145deg, #b592ee, #607b9c);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 5px 19px rgba(128, 104, 185, .2);
+    }
+
+    .avatar.friend { background: linear-gradient(145deg, #e1a8bc, #8d78ba); }
+    .person-name { overflow: hidden; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+    .person-place { margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .distance { margin-left: auto; color: #e3d8ff; font-size: 12px; font-weight: 650; white-space: nowrap; }
+    .connection-caption { margin-top: 13px; color: #aab1bf; font-size: 11px; line-height: 1.5; }
+
+    .action-stack { display: grid; min-width: 150px; gap: 8px; pointer-events: auto; }
+    .action-stack .button { min-height: 44px; border-radius: 14px; }
+    .location-state { max-width: 162px; color: var(--muted); font-size: 10px; line-height: 1.35; text-align: center; }
+
+    .leaflet-div-icon { border: 0; background: transparent; }
+    .map-pin { position: relative; width: 34px; height: 34px; }
+    .map-pin::before, .map-pin::after {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(202, 177, 255, .6);
+      border-radius: 50%;
+      content: "";
+      animation: beacon 2.6s ease-out infinite;
+    }
+    .map-pin::after { animation-delay: 1.3s; }
+    .map-pin-core {
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      transform: translate(-50%, -50%);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      background: #c3a2ff;
+      box-shadow: 0 0 18px 5px rgba(183, 144, 255, .7);
+    }
+    .map-pin.friend .map-pin-core { background: #ffbfd2; box-shadow: 0 0 18px 5px rgba(255, 150, 191, .65); }
+    .signal-pin {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,.95);
+      border-radius: 50%;
+      background: #d1b3ff;
+      box-shadow: 0 0 16px 7px rgba(199, 166, 255, .54);
+    }
+
+    @keyframes beacon {
+      0% { width: 12px; height: 12px; opacity: .75; }
+      100% { width: 48px; height: 48px; opacity: 0; }
+    }
+
+    .chat-panel {
+      position: absolute;
+      z-index: 700;
+      top: 0;
+      right: 0;
+      display: flex;
+      width: min(390px, 100%);
+      height: 100%;
+      flex-direction: column;
+      padding: max(18px, env(safe-area-inset-top)) 18px max(16px, env(safe-area-inset-bottom));
+      transform: translateX(105%);
+      border-radius: 24px 0 0 24px;
+      background: rgba(13, 17, 26, .95);
+      transition: transform .34s cubic-bezier(.2, .8, .2, 1);
+      pointer-events: auto;
+    }
+    .chat-panel.is-open { transform: translateX(0); }
+    .chat-header { display: flex; align-items: center; gap: 11px; padding: 6px 0 16px; border-bottom: 1px solid var(--line); }
+    .chat-title { flex: 1; min-width: 0; }
+    .chat-title strong { display: block; font-size: 14px; }
+    .chat-title span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .chat-messages { display: flex; flex: 1; flex-direction: column; gap: 11px; overflow-y: auto; padding: 18px 2px; }
+    .message { max-width: 82%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 15px 15px 15px 5px; background: rgba(255,255,255,.055); color: #e6e5ec; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+    .message.mine { align-self: flex-end; border-color: rgba(197,165,255,.17); border-radius: 15px 15px 5px 15px; background: rgba(168,137,224,.14); }
+    .message-time { display: block; margin-top: 5px; color: #8991a1; font-size: 9px; text-align: right; }
+    .chat-note { margin: 0 0 12px; padding: 9px 10px; border: 1px solid rgba(233, 198, 138, .12); border-radius: 12px; background: rgba(233,198,138,.045); color: #c0b49d; font-size: 10px; line-height: 1.45; }
+    .chat-form { display: flex; gap: 8px; }
+    .chat-input { width: 100%; min-width: 0; height: 44px; padding: 0 13px; border: 1px solid var(--line); border-radius: 14px; outline: 0; background: rgba(255,255,255,.045); color: var(--text); font-size: 12px; }
+    .chat-input::placeholder { color: #7e8797; }
+    .send-button { width: 45px; min-width: 45px; height: 44px; border-radius: 14px; font-size: 16px; }
+
+    .toast {
+      position: absolute;
+      z-index: 900;
+      top: max(77px, calc(env(safe-area-inset-top) + 60px));
+      left: 50%;
+      max-width: calc(100% - 32px);
+      padding: 11px 15px;
+      transform: translate(-50%, -10px);
+      border-radius: 14px;
+      color: #eceaf3;
+      font-size: 11px;
+      line-height: 1.4;
+      opacity: 0;
+      transition: opacity .2s ease, transform .2s ease;
+      pointer-events: none;
+    }
+    .toast.is-visible { transform: translate(-50%, 0); opacity: 1; }
+
+    .modal {
+      position: absolute;
+      z-index: 1000;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(4, 6, 11, .65);
+      opacity: 0;
+      transition: opacity .2s ease;
+      pointer-events: none;
+    }
+    .modal.is-open { opacity: 1; pointer-events: auto; }
+    .modal-card { width: min(420px, 100%); padding: 23px; border-radius: 24px; background: rgba(17, 21, 32, .97); }
+    .modal-close { float: right; }
+    .modal-icon { display: grid; width: 44px; height: 44px; margin-bottom: 18px; place-items: center; border: 1px solid rgba(197,165,255,.22); border-radius: 15px; background: rgba(197,165,255,.09); color: var(--accent); font-size: 20px; }
+    .modal-card h2 { margin: 0; font-size: 20px; letter-spacing: -.035em; }
+    .modal-card p { margin: 10px 0 18px; color: #a6adbb; font-size: 12px; line-height: 1.65; }
+    .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .modal-footnote { margin-top: 15px; color: #7e8797; font-size: 10px; line-height: 1.5; }
+
+    .error-card {
+      position: absolute;
+      z-index: 800;
+      top: 50%;
+      left: 50%;
+      display: none;
+      width: min(340px, calc(100% - 36px));
+      padding: 18px;
+      transform: translate(-50%, -50%);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(15,19,29,.94);
+      color: #e8e8ee;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+    .error-card.is-visible { display: block; }
+
+    @media (max-width: 640px) {
+      .app { min-height: 500px; }
+      .topbar { top: max(12px, env(safe-area-inset-top)); width: calc(100% - 24px); }
+      .brand { min-height: 44px; gap: 8px; padding-right: 11px; }
+      .brand-mark { width: 29px; height: 29px; }
+      .brand-name { font-size: 13px; }
+      .brand-caption { font-size: 9px; }
+      .top-actions { gap: 2px; padding: 3px; }
+      .top-actions .button { min-height: 36px; padding: 0 10px; font-size: 10px; }
+      .icon-button { width: 34px; min-height: 34px; }
+      .map-label { top: 70px; font-size: 9px; }
+      .bottom-area { bottom: max(10px, env(safe-area-inset-bottom)); padding: 10px; }
+      .bottom-content { grid-template-columns: 1fr; gap: 9px; }
+      .connection-card { padding: 14px 15px 13px; border-radius: 20px; }
+      .connection-main { margin-top: 10px; }
+      .avatar { width: 37px; height: 37px; border-radius: 13px; }
+      .person-name { font-size: 12px; }
+      .person-place { font-size: 9px; }
+      .distance { font-size: 11px; }
+      .connection-caption { margin-top: 10px; font-size: 10px; }
+      .action-stack { grid-template-columns: 1fr 1fr; align-items: center; gap: 8px; }
+      .action-stack .button { min-height: 42px; }
+      .location-state { max-width: none; grid-column: 1 / -1; grid-row: 2; text-align: left; }
+      .chat-panel { width: min(100%, 390px); border-radius: 22px 0 0 22px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
 </head>
-<body class="bg-darkBg text-slate-200 font-sans antialiased min-h-screen flex flex-col justify-between pb-24 selection:bg-accentBlue selection:text-white">
-
-    <!-- ================= TOP HEADER ================= -->
-    <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 py-3">
-        <div class="flex items-center justify-between max-w-lg mx-auto">
-            <div class="flex items-center space-x-3">
-                <div class="relative">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                        <i data-lucide="shield-search" class="w-5 h-5"></i>
-                    </div>
-                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-darkBg rounded-full animate-pulse"></span>
-                </div>
-                <div>
-                    <div class="flex items-center space-x-1.5">
-                        <h1 class="text-sm font-bold tracking-wide text-white uppercase">MEDIATOR DETECTIVE</h1>
-                        <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono">PRIVATE</span>
-                    </div>
-                    <p class="text-xs text-slate-400 flex items-center space-x-1">
-                        <span>Детективное агентство</span>
-                        <span class="text-slate-600">•</span>
-                        <span class="text-emerald-400 font-medium">Приём заявок</span>
-                    </p>
-                </div>
-            </div>
-
-            <button onclick="switchTab('my-requests')" class="relative p-2 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:bg-slate-700/50 transition">
-                <i data-lucide="folder-kanban" class="w-5 h-5 text-slate-300"></i>
-                <span id="header-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-accentBlue text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
-            </button>
+<body>
+  <main class="app">
+    <div id="map" role="application" aria-label="Карта точек связи"></div>
+    <div class="topbar">
+      <div class="brand" aria-label="distance — между нами">
+        <div class="brand-mark" aria-hidden="true">⌁</div>
+        <div>
+          <div class="brand-name">distance</div>
+          <div class="brand-caption">пространство между нами</div>
         </div>
-    </header>
-
-    <!-- ================= MAIN CONTAINER ================= -->
-    <main class="max-w-lg mx-auto w-full px-4 pt-4 flex-1">
-
-        <!-- ================= SCREEN 1: HOME DASHBOARD ================= -->
-        <section id="screen-home" class="space-y-5 fade-in">
-            <!-- User Welcome Banner -->
-            <div class="glass-card rounded-2xl p-4 border border-slate-800 relative overflow-hidden">
-                <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl"></div>
-                <div class="flex items-start justify-between relative z-10">
-                    <div>
-                        <div class="inline-flex items-center space-x-2 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700 mb-2">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                            <span class="text-[11px] text-slate-300 font-medium">Конфиденциально & Анонимно</span>
-                        </div>
-                        <h2 class="text-lg font-bold text-white">Здравствуйте, <span id="tg-user-name" class="text-accentBlue">Заказчик</span></h2>
-                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                            Частная детективная деятельность, поиск людей по минимальным данным и мирное досудебное урегулирование финансовых споров.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Stats Grid -->
-                <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/80 text-center">
-                    <div>
-                        <div class="text-base font-extrabold text-white">100%</div>
-                        <div class="text-[10px] text-slate-400">Анонимность</div>
-                    </div>
-                    <div class="border-x border-slate-800/80">
-                        <div class="text-base font-extrabold text-emerald-400">Законно</div>
-                        <div class="text-[10px] text-slate-400">Без уголовки</div>
-                    </div>
-                    <div>
-                        <div class="text-base font-extrabold text-accentBlue">24-72 ч</div>
-                        <div class="text-[10px] text-slate-400">Средний срок</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fast Call-to-Action Buttons -->
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="startOrderFlow('search')" class="glass-card p-3.5 rounded-xl border border-blue-500/20 hover:border-blue-500/50 transition text-left group relative overflow-hidden">
-                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-accentBlue flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                        <i data-lucide="user-search" class="w-4 h-4"></i>
-                    </div>
-                    <div class="font-bold text-sm text-white">Найти человека</div>
-                    <div class="text-[11px] text-slate-400 mt-0.5">По фото, ФИО, номеру</div>
-                </button>
-
-                <button onclick="startOrderFlow('return')" class="glass-card p-3.5 rounded-xl border border-emerald-500/20 hover:border-emerald-500/50 transition text-left group relative overflow-hidden">
-                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                        <i data-lucide="hand-coins" class="w-4 h-4"></i>
-                    </div>
-                    <div class="font-bold text-sm text-white">Возврат средств</div>
-                    <div class="text-[11px] text-slate-400 mt-0.5">Досудебная медиация</div>
-                </button>
-            </div>
-
-            <!-- Featured Services Preview -->
-            <div>
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Основные направления</h3>
-                    <button onclick="switchTab('services')" class="text-xs text-accentBlue font-medium flex items-center">
-                        Все услуги <i data-lucide="chevron-right" class="w-3.5 h-3.5 ml-0.5"></i>
-                    </button>
-                </div>
-
-                <div class="space-y-2.5">
-                    <!-- Service 1 Preview -->
-                    <div onclick="openServiceModal('search')" class="glass-card p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition cursor-pointer flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-accentBlue flex items-center justify-center flex-shrink-0">
-                                <i data-lucide="image" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-semibold text-white">Поиск контактов и связи</h4>
-                                <p class="text-xs text-slate-400">Поиск потерянных друзей, родных по фото или ФИО</p>
-                            </div>
-                        </div>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-
-                    <!-- Service 2 Preview -->
-                    <div onclick="openServiceModal('mediation')" class="glass-card p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition cursor-pointer flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center flex-shrink-0">
-                                <i data-lucide="scale" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-semibold text-white">Переговоры с мошенниками</h4>
-                                <p class="text-xs text-slate-400">Возврат денег через родственников и беседы</p>
-                            </div>
-                        </div>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Case Studies Teaser Banner -->
-            <div class="glass-card rounded-2xl p-4 border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent relative">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
-                            <i data-lucide="award" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-amber-300 uppercase tracking-wide">Решённые кейсы агентства</div>
-                            <div class="text-xs text-slate-300 font-medium">Истории дел и достигнутые результаты</div>
-                        </div>
-                    </div>
-                    <button onclick="switchTab('cases')" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 transition">
-                        Читать
-                    </button>
-                </div>
-            </div>
-
-            <!-- Ethical Rules Banner -->
-            <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 space-y-1">
-                <div class="font-semibold text-slate-300 flex items-center">
-                    <i data-lucide="shield-alert" class="w-4 h-4 text-accentBlue mr-1.5"></i>
-                    Принцип законности и этики
-                </div>
-                <p class="leading-relaxed text-[11px]">
-                    Мы не занимаемся шантажом, угрозами или сталкерством. Все расследования и переговоры ведутся исключительно в рамках закона и правового поля.
-                </p>
-            </div>
-        </section>
-
-
-        <!-- ================= SCREEN 2: SERVICE CATALOG ================= -->
-        <section id="screen-services" class="space-y-4 hidden fade-in">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-white">Каталог детективных услуг</h2>
-                    <p class="text-xs text-slate-400">Выберите подходящую категорию вашей задачи</p>
-                </div>
-                <span class="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded-md font-mono border border-slate-700">4 категории</span>
-            </div>
-
-            <div class="space-y-3">
-                <!-- Service 1 -->
-                <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-                    <div class="flex items-start justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-accentBlue flex items-center justify-center">
-                                <i data-lucide="user-check" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-white text-sm">Поиск людей и восстановление контактов</h3>
-                                <p class="text-xs text-slate-400">Поиск старых друзей, сослуживцев, родственников</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-300 leading-relaxed">
-                        Установление местонахождения, актуальных телефонов, соцсетей и адресов. Поиск производится по имеющемуся фото, ФИО, номеру авто или старым телефонам.
-                    </p>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
-                        <div>
-                            <span class="text-slate-400">Срок:</span>
-                            <span class="font-semibold text-slate-200">24-48 часов</span>
-                        </div>
-                        <button onclick="openOrderModal('search_person')" class="bg-accentBlue hover:bg-blue-600 text-white font-medium px-3.5 py-1.5 rounded-lg transition">
-                            Заказать поиск
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Service 2 -->
-                <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-                    <div class="flex items-start justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                                <i data-lucide="handshake" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-white text-sm">Досудебная медиация и возврат денег</h3>
-                                <p class="text-xs text-slate-400">Работа с мошенниками и должниками</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-300 leading-relaxed">
-                        Установление личности мошенника, его фактического адреса и контактов его родителей/близких. Проведение деликатных дипломатических переговоров без угроз для мирного добровольного возврата средств.
-                    </p>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
-                        <div>
-                            <span class="text-slate-400">Оплата:</span>
-                            <span class="font-semibold text-emerald-400">% от суммы или фиксированная</span>
-                        </div>
-                        <button onclick="openOrderModal('mediation_return')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-3.5 py-1.5 rounded-lg transition">
-                            Подать заявку
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Service 3 -->
-                <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-                    <div class="flex items-start justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
-                                <i data-lucide="shield-check" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-white text-sm">Проверка перед сделкой (Pre-Check)</h3>
-                                <p class="text-xs text-slate-400">Аудит физлиц, продавцов и контрагентов</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-300 leading-relaxed">
-                        Проверка человека или продавца перед переводом крупной суммы за покупку авто, недвижимости или бизнес-услуги. Проверка на наличие долгов, фейковых аккаунтов и мошеннического прошлого.
-                    </p>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
-                        <div>
-                            <span class="text-slate-400">Срок:</span>
-                            <span class="font-semibold text-slate-200">От 12 часов</span>
-                        </div>
-                        <button onclick="openOrderModal('pre_check')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-1.5 rounded-lg border border-slate-700 transition">
-                            Заказать проверку
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Service 4 -->
-                <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-                    <div class="flex items-start justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-accentCyan flex items-center justify-center">
-                                <i data-lucide="search" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-white text-sm">Индивидуальное расследование</h3>
-                                <p class="text-xs text-slate-400">Нестандартные жизненные ситуации</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-300 leading-relaxed">
-                        Если ваша проблема не подпадает под стандартные категории, мы разберем материалы индивидуально и предложим правовой и анонимный вариант решения.
-                    </p>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
-                        <div>
-                            <span class="text-slate-400">Формат:</span>
-                            <span class="font-semibold text-slate-200">Персональный разбор</span>
-                        </div>
-                        <button onclick="openOrderModal('custom_investigation')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-1.5 rounded-lg border border-slate-700 transition">
-                            Описать проблему
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ================= SCREEN 3: MULTI-STEP ORDER FORM ================= -->
-        <section id="screen-order" class="space-y-4 hidden fade-in">
-            <!-- Form Header & Progress -->
-            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-base font-bold text-white">Оформление заявки</h2>
-                        <p class="text-xs text-slate-400" id="step-indicator-text">Шаг 1 из 3: Выбор услуги</p>
-                    </div>
-                    <span id="step-badge" class="text-xs font-mono font-bold bg-blue-500/20 text-accentBlue px-2.5 py-1 rounded-lg border border-blue-500/30">
-                        1/3
-                    </span>
-                </div>
-
-                <!-- Progress Bar Track -->
-                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                    <div id="step-progress-bar" class="bg-gradient-to-r from-accentBlue to-emerald-400 h-full w-1/3 transition-all duration-300"></div>
-                </div>
-            </div>
-
-            <!-- Order Form Content -->
-            <form id="order-form" onsubmit="handleOrderSubmit(event)" class="glass-card rounded-2xl p-4 border border-slate-800 space-y-4">
-                
-                <!-- STEP 1: Select Category -->
-                <div id="form-step-1" class="space-y-3">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Суть обращения / Категория</label>
-                    
-                    <div class="space-y-2">
-                        <label class="flex items-center p-3 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-blue-500/50 cursor-pointer transition">
-                            <input type="radio" name="service_type" value="search_person" checked onchange="updateFormFields()" class="w-4 h-4 text-accentBlue focus:ring-accentBlue bg-slate-800 border-slate-700">
-                            <div class="ml-3">
-                                <div class="text-sm font-semibold text-white">Поиск человека / друга по фото или данным</div>
-                                <div class="text-[11px] text-slate-400">Ищу друга, сослуживца или родственника</div>
-                            </div>
-                        </label>
-
-                        <label class="flex items-center p-3 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/50 cursor-pointer transition">
-                            <input type="radio" name="service_type" value="mediation_return" onchange="updateFormFields()" class="w-4 h-4 text-emerald-400 focus:ring-emerald-400 bg-slate-800 border-slate-700">
-                            <div class="ml-3">
-                                <div class="text-sm font-semibold text-white">Возврат средств / Обман мошенниками</div>
-                                <div class="text-[11px] text-slate-400">Меня обманули на деньги, есть телефон/переписка</div>
-                            </div>
-                        </label>
-
-                        <label class="flex items-center p-3 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-purple-500/50 cursor-pointer transition">
-                            <input type="radio" name="service_type" value="pre_check" onchange="updateFormFields()" class="w-4 h-4 text-purple-400 focus:ring-purple-400 bg-slate-800 border-slate-700">
-                            <div class="ml-3">
-                                <div class="text-sm font-semibold text-white">Проверка продавца / контрагента</div>
-                                <div class="text-[11px] text-slate-400">Хочу проверить человека перед отправкой денег</div>
-                            </div>
-                        </label>
-
-                        <label class="flex items-center p-3 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-600 cursor-pointer transition">
-                            <input type="radio" name="service_type" value="custom_investigation" onchange="updateFormFields()" class="w-4 h-4 text-slate-400 focus:ring-slate-400 bg-slate-800 border-slate-700">
-                            <div class="ml-3">
-                                <div class="text-sm font-semibold text-white">Другая ситуация</div>
-                                <div class="text-[11px] text-slate-400">Индивидуальное детективное расследование</div>
-                            </div>
-                        </label>
-                    </div>
-
-                    <button type="button" onclick="nextStep(2)" class="w-full bg-accentBlue hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center space-x-2 mt-4">
-                        <span>Далее: Ввод имеющихся данных</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </button>
-                </div>
-
-                <!-- STEP 2: Input Known Data -->
-                <div id="form-step-2" class="space-y-3 hidden">
-                    <div class="flex items-center justify-between">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Известная информация о цели</label>
-                        <span class="text-[10px] text-slate-500">Укажите всё, что есть</span>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs text-slate-300 mb-1">ФИО / Возраст / Город (если известно)</label>
-                        <input type="text" id="target_fio" placeholder="Например: Иванов Иван Сергеевич, ~28 лет" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs text-slate-300 mb-1">Номер телефона</label>
-                            <input type="text" id="target_phone" placeholder="+7 (999) 000-00-00" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-300 mb-1">Госномер авто / Иное</label>
-                            <input type="text" id="target_car" placeholder="А000АА777" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs text-slate-300 mb-1">Ссылка на фото / Профиль в соцсетях</label>
-                        <input type="text" id="target_photo_link" placeholder="https://... или логин Telegram" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
-                    </div>
-
-                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex items-start space-x-2">
-                        <i data-lucide="info" class="w-4 h-4 text-accentBlue flex-shrink-0 mt-0.5"></i>
-                        <span>Если у вас есть фото файлом или скрины переписки, вы сможете отправить их напрямую мастеру после создания заявки.</span>
-                    </div>
-
-                    <div class="flex space-x-2 pt-2">
-                        <button type="button" onclick="nextStep(1)" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-3 rounded-xl transition">
-                            Назад
-                        </button>
-                        <button type="button" onclick="nextStep(3)" class="w-2/3 bg-accentBlue hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center space-x-2">
-                            <span>Далее: Описание ситуации</span>
-                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 3: Description & Submit -->
-                <div id="form-step-3" class="space-y-3 hidden">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Подробности ситуации и цель</label>
-
-                    <div id="amount-field-container">
-                        <label class="block text-xs text-slate-300 mb-1">Сумма ущерба / долга (если есть)</label>
-                        <div class="relative">
-                            <input type="number" id="target_amount" placeholder="150000" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-3.5 pr-8 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
-                            <span class="absolute right-3 top-2.5 text-slate-400 text-sm font-bold">₽</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs text-slate-300 mb-1">Описание вашей ситуации *</label>
-                        <textarea id="target_description" rows="4" required placeholder="Опишите детально: что произошло, при каких обстоятельствах потеряли связь или перевели деньги, и какого результата ожидаете..." class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition resize-none"></textarea>
-                    </div>
-
-                    <div class="space-y-3 rounded-xl border border-slate-800 bg-slate-900/50 p-3">
-                        <div>
-                            <label for="client_phone" class="block text-xs text-slate-300 mb-1">Ваш контактный номер телефона</label>
-                            <input type="tel" id="client_phone" autocomplete="tel" placeholder="+7 (999) 000-00-00" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
-                        </div>
-                        <div>
-                            <label for="client_telegram" class="block text-xs text-slate-300 mb-1">Ваш контактный Telegram</label>
-                            <input type="text" id="client_telegram" autocomplete="username" placeholder="@username или ссылка t.me/..." class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accentBlue transition">
-                        </div>
-                        <p id="contact-validation-message" class="text-[11px] text-slate-400" aria-live="polite">Укажите хотя бы один способ связи.</p>
-                    </div>
-
-                    <!-- Mandatory Legal Disclaimer Box -->
-                    <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2">
-                        <label class="flex items-start space-x-2 cursor-pointer">
-                            <input type="checkbox" id="legal_agree" required class="mt-0.5 w-4 h-4 text-accentBlue focus:ring-accentBlue rounded bg-slate-800 border-slate-700">
-                            <span class="text-[11px] text-slate-300 leading-tight">
-                                Я подтверждаю, что поиск не связан с преследованием (сталкерством), личной местью или нелегальной деятельностью. Гарантирую достоверность информации.
-                            </span>
-                        </label>
-                    </div>
-
-                    <div class="flex space-x-2 pt-2">
-                        <button type="button" onclick="nextStep(2)" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-3 rounded-xl transition">
-                            Назад
-                        </button>
-                        <button type="submit" id="submit-btn" class="w-2/3 bg-gradient-to-r from-accentBlue to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white font-extrabold py-3 rounded-xl transition shadow-lg shadow-blue-500/20 flex items-center justify-center space-x-2">
-                            <i data-lucide="send" class="w-4 h-4"></i>
-                            <span>Отправить заявку</span>
-                        </button>
-                    </div>
-                </div>
-
-            </form>
-        </section>
-
-
-        <!-- ================= SCREEN 4: CASE STUDIES ================= -->
-        <section id="screen-cases" class="space-y-4 hidden fade-in">
-            <div class="space-y-1">
-                <h2 class="text-base font-bold text-white">Решённые кейсы агентства</h2>
-                <p class="text-xs text-slate-400">Нажмите на карточку, чтобы прочитать о задаче и результате.</p>
-            </div>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Знакомство после встречи в кафе</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> заказчик увидел девушку в кафе, но постеснялся познакомиться. У него осталось её фото.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> помогли установить связь; девушка и заказчик познакомились и теперь общаются.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Возврат предоплаты за технику</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> покупатель перевёл предоплату за игровой ноутбук или телефон на площадке объявлений, после чего продавец заблокировал чат.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> установили личность продавца и провели деликатные переговоры с его близкими. Средства были возвращены полностью.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Компенсация ущерба после P2P-обмана</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> при P2P-сделке контрагент подтвердил получение средств поддельным чеком и исчез с криптовалютой.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> по имеющимся материалам установили участников схемы и добились компенсации ущерба.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Поиск виновника повреждения автомобиля</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> ночью во дворе поцарапали автомобиль и уехали. Остался фрагмент номера или нечёткий кадр.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> установили автомобиль и его владельца; стороны связались для возмещения стоимости ремонта.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Покупка автомобиля с залогом</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> покупатель приобрёл автомобиль у перекупщика и позже узнал, что машина находится в банковском залоге.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> восстановили цепочку сделок, установили первоначального владельца и помогли клиенту урегулировать последствия рискованной покупки.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Автомобиль заблокировал проезд</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> автомобиль был оставлен на частной территории и мешал проезду.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> помогли связаться с собственником, после чего вопрос с освобождением проезда и перемещением автомобиля был решён.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Возврат долга после аренды квартиры</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> съёмщик съехал, не оплатив последние месяцы аренды и забрав часть имущества.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> установили актуальные данные для связи с должником и помогли добиться полного погашения долга.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Проверка поставщика стройматериалов</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> компания планировала внести предоплату новому юридическому лицу, предлагавшему стройматериалы по привлекательной цене.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> проверка выявила признаки номинальной регистрации компании и многочисленные судебные иски. Клиент отказался от рискованной предоплаты и сохранил бюджет.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Возврат долга по расписке</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> знакомый взял крупную сумму по рукописной расписке и сменил номер телефона.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> собрали сведения, необходимые клиенту для дальнейшего законного взыскания долга, и помогли подготовить материалы для передачи юристу.</p>
-                </div>
-            </details>
-
-            <details class="glass-card rounded-2xl border border-slate-800 group">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                    <span class="text-sm font-semibold text-white">Прекращение угроз и шантажа в Telegram</span>
-                    <span class="text-xs text-accentBlue group-open:hidden">Подробнее +</span>
-                    <span class="hidden text-xs text-accentBlue group-open:inline">Свернуть −</span>
-                </summary>
-                <div class="space-y-2 border-t border-slate-800 px-4 pb-4 pt-3 text-xs">
-                    <p class="text-slate-300"><b>Ситуация:</b> клиенту и его семье поступали угрозы и шантаж с анонимного Telegram-аккаунта.</p>
-                    <p class="text-slate-400"><b class="text-emerald-400">Результат:</b> анализ доступных цифровых материалов помог установить источник угроз, после чего травля прекратилась.</p>
-                </div>
-            </details>
-
-            <p class="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-[11px] leading-relaxed text-slate-400">
-                Кейсы представлены в обобщённом виде для сохранения конфиденциальности клиентов. Каждая ситуация индивидуальна; результат зависит от обстоятельств дела.
-            </p>
-        </section>
-
-
-        <!-- ================= SCREEN 5: GUARANTEES & POLICY ================= -->
-        <section id="screen-policy" class="space-y-4 hidden fade-in">
-            <div>
-                <h2 class="text-base font-bold text-white">Гарантии и Регламент</h2>
-                <p class="text-xs text-slate-400">Правила работы и этический кодекс детективного агентства</p>
-            </div>
-
-            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-                <div class="flex items-center space-x-3 text-accentBlue">
-                    <i data-lucide="lock" class="w-5 h-5"></i>
-                    <h3 class="font-bold text-white text-sm">1. Полная Конфиденциальность</h3>
-                </div>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                    Все обращения, переданные материалы и результаты расследований строго защищены. Мы не передаем данные третьим лицам и гарантируем анонимность клиента.
-                </p>
-            </div>
-
-            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-                <div class="flex items-center space-x-3 text-emerald-400">
-                    <i data-lucide="scale" class="w-5 h-5"></i>
-                    <h3 class="font-bold text-white text-sm">2. Работа строго в рамках Закона</h3>
-                </div>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                    Мы не осуществляем несанкционированный взлом систем, вымогательство или физическое воздействие. Наш инструмент — аналитика открытых источников данных (OSINT) и профессиональные переговоры.
-                </p>
-            </div>
-
-            <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3 border-l-4 border-l-accentRed">
-                <div class="flex items-center space-x-3 text-accentRed">
-                    <i data-lucide="user-x" class="w-5 h-5"></i>
-                    <h3 class="font-bold text-white text-sm">3. Запрет на сталкерство и слежку</h3>
-                </div>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                    Агентство оставляет за собой право отказать в выполнении заявки без объяснения причин, если возникнет подозрение, что заказ связан с преследованием бывших партнеров, ревностью или криминальным умыслом.
-                </p>
-            </div>
-        </section>
-
-
-        <!-- ================= SCREEN 6: MY REQUESTS TRACKER ================= -->
-        <section id="screen-my-requests" class="space-y-4 hidden fade-in">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-white">Мои Заявки</h2>
-                    <p class="text-xs text-slate-400">Статус обработки ваших обращений</p>
-                </div>
-                <button onclick="refreshOrders()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                </button>
-            </div>
-
-            <!-- Orders Container -->
-            <div id="orders-list-container" class="space-y-3">
-                <!-- Dynamic Content or Empty State -->
-                <div id="empty-orders-state" class="glass-card rounded-2xl p-8 text-center space-y-3">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center mx-auto">
-                        <i data-lucide="inbox" class="w-6 h-6"></i>
-                    </div>
-                    <div class="text-sm font-semibold text-white">У вас пока нет активных заявок</div>
-                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Выберите необходимую услугу и заполните вводные данные для начала работы.</p>
-                    <button onclick="switchTab('order')" class="bg-accentBlue text-white text-xs font-bold px-4 py-2 rounded-xl transition">
-                        Подать новую заявку
-                    </button>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- ================= BOTTOM NAVIGATION BAR ================= -->
-    <nav class="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800/80 px-2 py-2">
-        <div class="max-w-lg mx-auto grid grid-cols-5 gap-1 text-center">
-            
-            <!-- Tab 1: Home -->
-            <button id="nav-home" onclick="switchTab('home')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-accentBlue">
-                <i data-lucide="home" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">Главная</span>
-            </button>
-
-            <!-- Tab 2: Services -->
-            <button id="nav-services" onclick="switchTab('services')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-slate-400 hover:text-slate-200">
-                <i data-lucide="layers" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">Услуги</span>
-            </button>
-
-            <!-- Tab 3: Order -->
-            <button id="nav-order" onclick="switchTab('order')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-slate-400 hover:text-slate-200">
-                <div class="relative">
-                    <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i>
-                </div>
-                <span class="text-[10px] font-medium text-emerald-400">Заявка</span>
-            </button>
-
-            <!-- Tab 4: Cases -->
-            <button id="nav-cases" onclick="switchTab('cases')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-slate-400 hover:text-slate-200">
-                <i data-lucide="briefcase" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">Кейсы</span>
-            </button>
-
-            <!-- Tab 5: Policy -->
-            <button id="nav-policy" onclick="switchTab('policy')" class="nav-btn py-1.5 rounded-xl flex flex-col items-center justify-center space-y-1 text-slate-400 hover:text-slate-200">
-                <i data-lucide="shield" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">Правила</span>
-            </button>
-
-        </div>
-    </nav>
-
-    <!-- ================= SERVICE DETAILS MODAL ================= -->
-    <div id="service-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 fade-in">
-        <div class="glass-card w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 border border-slate-700 space-y-4 max-h-[85vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 id="modal-title" class="font-bold text-white text-base">Детали услуги</h3>
-                <button onclick="closeServiceModal()" class="p-1 rounded-lg text-slate-400 hover:text-white">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <div id="modal-content" class="text-xs text-slate-300 space-y-3">
-                <!-- Dynamic Content Inserted Here -->
-            </div>
-            <div class="pt-2">
-                <button id="modal-order-btn" onclick="" class="w-full bg-accentBlue text-white font-bold py-3 rounded-xl transition">
-                    Оформить заявку
-                </button>
-            </div>
-        </div>
+      </div>
+      <div class="top-actions">
+        <button class="button button-subtle" id="inviteButton" type="button" aria-label="Пригласить друга">
+          <span aria-hidden="true">＋</span><span>Пригласить</span>
+        </button>
+        <button class="icon-button" id="chatOpenButton" type="button" aria-label="Открыть чат" title="Открыть чат">✳</button>
+      </div>
     </div>
 
+    <div class="map-label"><span class="status-dot" id="connectionDot"></span><span id="mapStatus">демо-связь · пример маршрута</span></div>
 
-    <!-- ================= JAVASCRIPT APP LOGIC ================= -->
-    <script>
-        // Telegram Web App Initialization
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.ready();
-            tg.expand();
-            if (tg.initDataUnsafe?.user) {
-                const user = tg.initDataUnsafe.user;
-                document.getElementById('tg-user-name').innerText = user.first_name || user.username || 'Заказчик';
-            }
-        }
+    <section class="bottom-area" aria-label="Связь">
+      <div class="bottom-content">
+        <div class="glass-card connection-card">
+          <div class="eyebrow"><span>ваше пространство</span><span class="demo-badge">ЛОКАЛЬНОЕ ДЕМО</span></div>
+          <div class="connection-main">
+            <div class="people">
+              <div class="avatar" id="myAvatar" aria-hidden="true">Я</div>
+              <div>
+                <div class="person-name">Ты <span style="color:#858d9d;font-weight:450">↔</span> Мила</div>
+                <div class="person-place" id="placesText">Точка рядом с Москвой · пример у Берлина</div>
+              </div>
+            </div>
+            <div class="distance" id="distanceText">1 608 км</div>
+          </div>
+          <div class="connection-caption">Отправь сообщение — и маленький световой сигнал пройдёт между точками.</div>
+        </div>
+        <div class="action-stack">
+          <button class="button button-primary" id="locationButton" type="button">◎ Показать мою точку</button>
+          <button class="button button-subtle" id="hideLocationButton" type="button" hidden>Скрыть точку</button>
+          <button class="button button-subtle" id="chatButton" type="button">Открыть переписку&nbsp; ↗</button>
+          <div class="location-state" id="locationState">Твоя геопозиция не запрашивалась и никуда не отправляется.</div>
+        </div>
+      </div>
+    </section>
 
-        // Application State
-        let currentStep = 1;
-        let storedOrders = JSON.parse(localStorage.getItem('veritas_orders') || '[]');
+    <aside class="chat-panel" id="chatPanel" aria-label="Личная переписка" aria-hidden="true">
+      <div class="chat-header">
+        <div class="avatar friend" aria-hidden="true">М</div>
+        <div class="chat-title"><strong>Ты и Мила</strong><span>демо-переписка · только на этом устройстве</span></div>
+        <button class="icon-button" id="chatCloseButton" type="button" aria-label="Закрыть чат">×</button>
+      </div>
+      <div class="chat-messages" id="chatMessages" aria-live="polite">
+        <div class="message">Я здесь. Просто захотелось напомнить 💜<span class="message-time">пример</span></div>
+        <div class="message mine">Вижу твой огонёк ✨<span class="message-time">пример</span></div>
+      </div>
+      <p class="chat-note">Это демонстрация: сообщения пока не отправляются другому человеку. Подключим приватный чат после настройки базы.</p>
+      <form class="chat-form" id="chatForm">
+        <input class="chat-input" id="messageInput" maxlength="500" autocomplete="off" placeholder="Отправить сигнал..." aria-label="Сообщение">
+        <button class="button button-primary send-button" type="submit" aria-label="Отправить сообщение">↑</button>
+      </form>
+    </aside>
 
-        // Initialize Icons & UI on Load
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            updateOrdersBadge();
-            renderOrdersList();
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="error-card" id="mapError" role="alert">
+      Не удалось загрузить карту. Проверь подключение к интернету и обнови страницу.
+      <button class="button button-subtle" id="retryMapButton" type="button" style="display:flex;margin:12px auto 0">Обновить</button>
+    </div>
 
-            ['client_phone', 'client_telegram'].forEach(id => {
-                document.getElementById(id).addEventListener('input', () => {
-                    const hasContact = document.getElementById('client_phone').value.trim()
-                        || document.getElementById('client_telegram').value.trim();
-                    if (hasContact) {
-                        const message = document.getElementById('contact-validation-message');
-                        message.innerText = 'Укажите хотя бы один способ связи.';
-                        message.classList.remove('text-red-400');
-                        message.classList.add('text-slate-400');
-                    }
-                });
-            });
+    <div class="modal" id="privacyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+      <div class="modal-card">
+        <button class="icon-button modal-close" id="modalCloseButton" type="button" aria-label="Закрыть">×</button>
+        <div class="modal-icon" aria-hidden="true">⌖</div>
+        <h2 id="modalTitle">Пригласить близкого</h2>
+        <p>Пока это визуальный прототип: точки и сообщения видны только тебе на этом устройстве. Чтобы приглашение действительно связало два телефона, сначала подключим базу и безопасную авторизацию.</p>
+        <div class="modal-actions">
+          <button class="button button-primary" id="modalOkayButton" type="button">Понятно</button>
+        </div>
+        <div class="modal-footnote">Геопозиция включается только по твоему нажатию. Сейчас координаты остаются в памяти этой страницы и не сохраняются.</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const demoPoints = {
+        me: [55.751244, 37.618423],
+        friend: [52.520008, 13.404954]
+      };
+      const elements = {
+        mapStatus: document.getElementById("mapStatus"),
+        connectionDot: document.getElementById("connectionDot"),
+        locationButton: document.getElementById("locationButton"),
+        hideLocationButton: document.getElementById("hideLocationButton"),
+        locationState: document.getElementById("locationState"),
+        placesText: document.getElementById("placesText"),
+        distanceText: document.getElementById("distanceText"),
+        chatPanel: document.getElementById("chatPanel"),
+        chatMessages: document.getElementById("chatMessages"),
+        chatForm: document.getElementById("chatForm"),
+        messageInput: document.getElementById("messageInput"),
+        toast: document.getElementById("toast"),
+        privacyModal: document.getElementById("privacyModal"),
+        mapError: document.getElementById("mapError")
+      };
+
+      let map = null;
+      let myMarker = null;
+      let friendMarker = null;
+      let routeLine = null;
+      let signalMarker = null;
+      let currentMe = [...demoPoints.me];
+      let toastTimer = 0;
+
+      function showToast(message) {
+        elements.toast.textContent = message;
+        elements.toast.classList.add("is-visible");
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => elements.toast.classList.remove("is-visible"), 3200);
+      }
+
+      function customPin(isFriend) {
+        const className = isFriend ? "map-pin friend" : "map-pin";
+        return L.divIcon({
+          className: "",
+          html: `<div class="${className}"><span class="map-pin-core"></span></div>`,
+          iconSize: [34, 34],
+          iconAnchor: [17, 17]
         });
+      }
 
-        // Tab Navigation Router
-        function switchTab(tabId) {
-            const screens = ['home', 'services', 'order', 'cases', 'policy', 'my-requests'];
-            
-            screens.forEach(s => {
-                const screenEl = document.getElementById(`screen-${s}`);
-                if (screenEl) screenEl.classList.add('hidden');
-            });
+      function haversineKm(from, to) {
+        const radians = (degrees) => degrees * Math.PI / 180;
+        const lat1 = radians(from[0]);
+        const lat2 = radians(to[0]);
+        const deltaLat = radians(to[0] - from[0]);
+        const deltaLon = radians(to[1] - from[1]);
+        const value = Math.sin(deltaLat / 2) ** 2
+          + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
+        return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+      }
 
-            const targetScreen = document.getElementById(`screen-${tabId}`);
-            if (targetScreen) targetScreen.classList.remove('hidden');
+      function updateConnection() {
+        if (!map || !myMarker || !friendMarker || !routeLine) return;
+        myMarker.setLatLng(currentMe);
+        routeLine.setLatLngs([currentMe, demoPoints.friend]);
+        elements.distanceText.textContent = `${Math.round(haversineKm(currentMe, demoPoints.friend)).toLocaleString("ru-RU")} км`;
+        map.fitBounds(L.latLngBounds([currentMe, demoPoints.friend]), { padding: [90, 90], maxZoom: 5, animate: true });
+      }
 
-            // Update Nav Buttons Styles
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-accentBlue');
-                btn.classList.add('text-slate-400');
-            });
-
-            const activeNavBtn = document.getElementById(`nav-${tabId}`);
-            if (activeNavBtn) {
-                activeNavBtn.classList.remove('text-slate-400');
-                activeNavBtn.classList.add('text-accentBlue');
-            }
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+      function initializeMap() {
+        if (!window.L) {
+          elements.mapError.classList.add("is-visible");
+          return;
         }
-
-        // Form Step Wizard Navigation
-        function nextStep(step) {
-            currentStep = step;
-            
-            // Hide all steps
-            document.getElementById('form-step-1').classList.add('hidden');
-            document.getElementById('form-step-2').classList.add('hidden');
-            document.getElementById('form-step-3').classList.add('hidden');
-
-            // Show active step
-            document.getElementById(`form-step-${step}`).classList.remove('hidden');
-
-            // Update Header & Progress Bar
-            const bar = document.getElementById('step-progress-bar');
-            const badge = document.getElementById('step-badge');
-            const text = document.getElementById('step-indicator-text');
-
-            if (step === 1) {
-                bar.style.width = '33%';
-                badge.innerText = '1/3';
-                text.innerText = 'Шаг 1 из 3: Выбор проблемы';
-            } else if (step === 2) {
-                bar.style.width = '66%';
-                badge.innerText = '2/3';
-                text.innerText = 'Шаг 2 из 3: Известные данные';
-            } else if (step === 3) {
-                bar.style.width = '100%';
-                badge.innerText = '3/3';
-                text.innerText = 'Шаг 3 из 3: Описание и отправка';
-            }
+        elements.mapError.classList.remove("is-visible");
+        if (map) {
+          map.remove();
+          map = null;
         }
+        map = L.map("map", { zoomControl: false, scrollWheelZoom: false, worldCopyJump: true, attributionControl: true });
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          subdomains: "abcd",
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(map);
+        routeLine = L.polyline([currentMe, demoPoints.friend], {
+          color: "#c5a5ff",
+          weight: 1.4,
+          opacity: .68,
+          dashArray: "3 9",
+          lineCap: "round"
+        }).addTo(map);
+        myMarker = L.marker(currentMe, { icon: customPin(false), keyboard: false }).addTo(map);
+        friendMarker = L.marker(demoPoints.friend, { icon: customPin(true), keyboard: false }).addTo(map);
+        map.fitBounds(L.latLngBounds([currentMe, demoPoints.friend]), { padding: [95, 95], maxZoom: 5 });
+      }
 
-        // Quick Launch Order Flow Trigger
-        function startOrderFlow(type) {
-            switchTab('order');
-            const radioMap = {
-                'search': 'search_person',
-                'return': 'mediation_return'
-            };
-            
-            const radioVal = radioMap[type] || 'search_person';
-            const radio = document.querySelector(`input[name="service_type"][value="${radioVal}"]`);
-            if (radio) {
-                radio.checked = true;
-                updateFormFields();
-            }
-            nextStep(1);
+      function openChat() {
+        elements.chatPanel.classList.add("is-open");
+        elements.chatPanel.setAttribute("aria-hidden", "false");
+        window.setTimeout(() => elements.messageInput.focus(), 250);
+      }
+
+      function closeChat() {
+        elements.chatPanel.classList.remove("is-open");
+        elements.chatPanel.setAttribute("aria-hidden", "true");
+      }
+
+      function showInviteInfo() {
+        elements.privacyModal.classList.add("is-open");
+        elements.privacyModal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeInviteInfo() {
+        elements.privacyModal.classList.remove("is-open");
+        elements.privacyModal.setAttribute("aria-hidden", "true");
+      }
+
+      function requestLocation() {
+        if (!navigator.geolocation) {
+          elements.locationState.textContent = "Этот браузер не поддерживает геолокацию. Можно продолжить с демо-точкой.";
+          showToast("Геолокация в этом браузере недоступна.");
+          return;
         }
+        elements.locationButton.disabled = true;
+        elements.locationButton.textContent = "Определяем точку…";
+        elements.locationState.textContent = "Браузер спросит разрешение. Координаты останутся только в этой вкладке.";
+        navigator.geolocation.getCurrentPosition((position) => {
+          currentMe = [position.coords.latitude, position.coords.longitude];
+          elements.locationButton.hidden = true;
+          elements.hideLocationButton.hidden = false;
+          elements.locationState.textContent = "Точка показана только тебе. Она не сохраняется и не отправляется.";
+          elements.placesText.textContent = "Твоя текущая точка · пример у Берлина";
+          elements.mapStatus.textContent = "твоя точка видна только тебе";
+          elements.connectionDot.classList.add("is-live");
+          updateConnection();
+          elements.locationButton.disabled = false;
+          elements.locationButton.textContent = "◎ Показать мою точку";
+          showToast("Точка показана на карте только для этой сессии.");
+        }, (error) => {
+          elements.locationButton.disabled = false;
+          elements.locationButton.textContent = "◎ Показать мою точку";
+          let reason = "Не удалось получить геопозицию.";
+          if (error.code === error.PERMISSION_DENIED) reason = "Доступ запрещён. Разреши геолокацию в настройках браузера, если захочешь попробовать.";
+          if (error.code === error.POSITION_UNAVAILABLE) reason = "Браузер пока не может определить геопозицию.";
+          if (error.code === error.TIMEOUT) reason = "Определение геопозиции заняло слишком много времени. Попробуй ещё раз.";
+          elements.locationState.textContent = reason;
+          showToast(reason);
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+      }
 
-        function openOrderModal(typeVal) {
-            switchTab('order');
-            const radio = document.querySelector(`input[name="service_type"][value="${typeVal}"]`);
-            if (radio) {
-                radio.checked = true;
-                updateFormFields();
-            }
-            nextStep(1);
+      function hideLocation() {
+        currentMe = [...demoPoints.me];
+        elements.locationButton.hidden = false;
+        elements.hideLocationButton.hidden = true;
+        elements.locationState.textContent = "Твоя геопозиция скрыта и удалена из памяти страницы.";
+        elements.placesText.textContent = "Точка рядом с Москвой · пример у Берлина";
+        elements.mapStatus.textContent = "демо-связь · пример маршрута";
+        elements.connectionDot.classList.remove("is-live");
+        updateConnection();
+        showToast("Точка скрыта. Точные координаты очищены.");
+      }
+
+      function animateSignal(from, to) {
+        if (!map || !signalMarker) return;
+        const start = performance.now();
+        const duration = 1700;
+        signalMarker.setLatLng(from);
+        signalMarker.setOpacity(1);
+        const step = (now) => {
+          const progress = Math.min((now - start) / duration, 1);
+          const eased = 1 - (1 - progress) ** 3;
+          const position = [
+            from[0] + (to[0] - from[0]) * eased,
+            from[1] + (to[1] - from[1]) * eased
+          ];
+          signalMarker.setLatLng(position);
+          if (progress < 1) {
+            window.requestAnimationFrame(step);
+          } else {
+            window.setTimeout(() => signalMarker && signalMarker.setOpacity(0), 350);
+          }
+        };
+        window.requestAnimationFrame(step);
+      }
+
+      function addMessage(text) {
+        const message = document.createElement("div");
+        message.className = "message mine";
+        message.append(document.createTextNode(text));
+        const time = document.createElement("span");
+        time.className = "message-time";
+        time.textContent = new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+        message.append(time);
+        elements.chatMessages.append(message);
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        animateSignal(currentMe, demoPoints.friend);
+        showToast("Сигнал прошёл по линии · это локальная демо-анимация.");
+      }
+
+      document.getElementById("inviteButton").addEventListener("click", showInviteInfo);
+      document.getElementById("chatOpenButton").addEventListener("click", openChat);
+      document.getElementById("chatButton").addEventListener("click", openChat);
+      document.getElementById("chatCloseButton").addEventListener("click", closeChat);
+      document.getElementById("modalCloseButton").addEventListener("click", closeInviteInfo);
+      document.getElementById("modalOkayButton").addEventListener("click", closeInviteInfo);
+      elements.privacyModal.addEventListener("click", (event) => {
+        if (event.target === elements.privacyModal) closeInviteInfo();
+      });
+      elements.locationButton.addEventListener("click", requestLocation);
+      elements.hideLocationButton.addEventListener("click", hideLocation);
+      document.getElementById("retryMapButton").addEventListener("click", initializeMap);
+      elements.chatForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = elements.messageInput.value.trim();
+        if (!text) {
+          elements.messageInput.focus();
+          return;
         }
-
-        // Conditional Field Formatting
-        function updateFormFields() {
-            const selectedType = document.querySelector('input[name="service_type"]:checked')?.value;
-            const amountContainer = document.getElementById('amount-field-container');
-            
-            if (selectedType === 'mediation_return') {
-                amountContainer.classList.remove('hidden');
-            } else {
-                amountContainer.classList.add('hidden');
-            }
+        addMessage(text);
+        elements.messageInput.value = "";
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeChat();
+          closeInviteInfo();
         }
+      });
 
-        // Handle Order Submission
-        function handleOrderSubmit(e) {
-            e.preventDefault();
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+      }
 
-            const clientPhone = document.getElementById('client_phone').value.trim();
-            const clientTelegram = document.getElementById('client_telegram').value.trim();
-            const contactValidationMessage = document.getElementById('contact-validation-message');
-
-            if (!clientPhone && !clientTelegram) {
-                contactValidationMessage.innerText = 'Укажите номер телефона или Telegram для связи.';
-                contactValidationMessage.classList.remove('text-slate-400');
-                contactValidationMessage.classList.add('text-red-400');
-                document.getElementById('client_phone').focus({ preventScroll: true });
-                return;
-            }
-
-            contactValidationMessage.innerText = 'Укажите хотя бы один способ связи.';
-            contactValidationMessage.classList.remove('text-red-400');
-            contactValidationMessage.classList.add('text-slate-400');
-
-            const serviceType = document.querySelector('input[name="service_type"]:checked')?.value;
-            const fio = document.getElementById('target_fio').value.trim();
-            const phone = document.getElementById('target_phone').value.trim();
-            const car = document.getElementById('target_car').value.trim();
-            const photoLink = document.getElementById('target_photo_link').value.trim();
-            const amount = document.getElementById('target_amount').value.trim();
-            const description = document.getElementById('target_description').value.trim();
-
-            const serviceNames = {
-                'search_person': 'Поиск человека / контактов',
-                'mediation_return': 'Возврат средств / Переговоры',
-                'pre_check': 'Проверка перед сделкой',
-                'custom_investigation': 'Индивидуальное расследование'
-            };
-
-            const orderPayload = {
-                id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
-                date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
-                service_code: serviceType,
-                service_title: serviceNames[serviceType] || 'Заявка',
-                fio: fio || 'Не указано',
-                phone: phone || 'Не указано',
-                car: car || 'Не указано',
-                photoLink: photoLink || 'Не указано',
-                client_phone: clientPhone || 'Не указан',
-                client_telegram: clientTelegram || 'Не указан',
-                amount: amount ? `${amount} ₽` : 'Н/Д',
-                description: description,
-                status: 'Новая'
-            };
-
-            if (!tg || typeof tg.sendData !== 'function') {
-                alert('Заявку не отправили. Откройте приложение через кнопку бота «Mediator Detective» и попробуйте снова.');
-                return;
-            }
-
-            try {
-                tg.sendData(JSON.stringify(orderPayload));
-            } catch (err) {
-                console.error('Не удалось отправить заявку боту:', err);
-                alert('Не удалось отправить заявку боту. Откройте приложение через кнопку бота «Mediator Detective» и попробуйте снова.');
-                return;
-            }
-
-            // Save locally
-            storedOrders.unshift(orderPayload);
-            localStorage.setItem('veritas_orders', JSON.stringify(storedOrders));
-
-            // Reset Form & Update View
-            document.getElementById('order-form').reset();
-            nextStep(1);
-            updateOrdersBadge();
-            renderOrdersList();
-
-            // Switch to Tracker Screen
-            switchTab('my-requests');
-        }
-
-        // Render Local Orders List
-        function renderOrdersList() {
-            const container = document.getElementById('orders-list-container');
-            const emptyState = document.getElementById('empty-orders-state');
-
-            if (storedOrders.length === 0) {
-                if (emptyState) emptyState.classList.remove('hidden');
-                container.innerHTML = '';
-                if (emptyState) container.appendChild(emptyState);
-                return;
-            }
-
-            container.innerHTML = '';
-
-            storedOrders.forEach(order => {
-                const card = document.createElement('div');
-                card.className = 'glass-card rounded-2xl p-4 border border-slate-800 space-y-2.5';
-
-                const statusBadges = {
-                    'Новая': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-                    'В работе': 'bg-blue-500/10 text-accentBlue border-blue-500/20',
-                    'Завершено': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                };
-
-                const badgeClass = statusBadges[order.status] || 'bg-slate-800 text-slate-300';
-
-                card.innerHTML = `
-                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xs font-mono font-bold text-white">${order.id}</span>
-                            <span class="text-[10px] text-slate-500">${order.date}</span>
-                        </div>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${badgeClass}">
-                            ${order.status}
-                        </span>
-                    </div>
-
-                    <div class="text-xs">
-                        <div class="font-bold text-slate-200">${order.service_title}</div>
-                        <p class="text-slate-400 text-[11px] mt-1 line-clamp-2">${order.description}</p>
-                    </div>
-
-                    <div class="bg-slate-900/60 p-2.5 rounded-xl text-[11px] space-y-1 font-mono text-slate-400">
-                        <div>Вводные: ${order.fio} | ${order.phone}</div>
-                        ${order.amount !== 'Н/Д' ? `<div class="text-emerald-400">Сумма ущерба: ${order.amount}</div>` : ''}
-                    </div>
-                `;
-
-                container.appendChild(card);
-            });
-        }
-
-        function updateOrdersBadge() {
-            const badge = document.getElementById('header-badge');
-            if (storedOrders.length > 0) {
-                badge.innerText = storedOrders.length;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        function refreshOrders() {
-            storedOrders = JSON.parse(localStorage.getItem('veritas_orders') || '[]');
-            renderOrdersList();
-            updateOrdersBadge();
-        }
-
-        // Modal Helpers
-        function openServiceModal(type) {
-            const modal = document.getElementById('service-modal');
-            const title = document.getElementById('modal-title');
-            const content = document.getElementById('modal-content');
-            const btn = document.getElementById('modal-order-btn');
-
-            if (type === 'search') {
-                title.innerText = 'Поиск контактов и связей';
-                content.innerHTML = `
-                    <p>Мы осуществляем профессиональный поиск утраченных контактов по имеющимся данным:</p>
-                    <ul class="list-disc list-inside space-y-1 text-slate-400">
-                        <li>Поиск по старой или свежей фотографии;</li>
-                        <li>Поиск по ФИО, дате рождения или старым адресам;</li>
-                        <li>Поиск по госномеру автомобиля или номеру телефона.</li>
-                    </ul>
-                    <p class="text-emerald-400 font-semibold">Срок исполнения: от 24 до 48 часов.</p>
-                `;
-                btn.onclick = () => { closeServiceModal(); openOrderModal('search_person'); };
-            } else if (type === 'mediation') {
-                title.innerText = 'Досудебное урегулирование и возврат';
-                content.innerHTML = `
-                    <p>Деликатная дипломатическая работа в случаях интернет-обмана:</p>
-                    <ul class="list-disc list-inside space-y-1 text-slate-400">
-                        <li>Установление личности и фактического местонахождения обидчика;</li>
-                        <li>Поиск контактов родителей или близких родственников;</li>
-                        <li>Проведение мирных переговоров с разъяснением правовых последствий;</li>
-                        <li>Добровольный возврат средств без уголовного преследования.</li>
-                    </ul>
-                `;
-                btn.onclick = () => { closeServiceModal(); openOrderModal('mediation_return'); };
-            }
-
-            modal.classList.remove('hidden');
-        }
-
-        function closeServiceModal() {
-            document.getElementById('service-modal').classList.add('hidden');
-        }
-    </script>
+      initializeMap();
+      if (window.L && map) {
+        signalMarker = L.marker(currentMe, {
+          icon: L.divIcon({ className: "", html: '<div class="signal-pin"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }),
+          opacity: 0,
+          interactive: false,
+          keyboard: false
+        }).addTo(map);
+      }
+    })();
+  </script>
 </body>
 </html>
